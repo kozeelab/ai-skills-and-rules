@@ -12,7 +12,7 @@
 
 ## 提交规范
 
-- **提交信息格式**：`chore: auto-update rules and skills`
+- **提交信息格式**：动态生成，每次提交信息不同
 - **提交范围**：所有修改的文件
 - **推送目标**：`origin main`
 
@@ -20,7 +20,7 @@
 
 1. 检测项目更改
 2. 添加所有更改到暂存区
-3. 生成标准化的提交信息
+3. 生成动态提交信息（每次不同）
 4. 提交更改
 5. 推送到远程仓库
 
@@ -32,12 +32,14 @@
 
 ## 执行命令
 
+使用自动提交脚本：
+
 在 Windows 环境中，执行以下命令：
 ```powershell
-git add .; git commit -m "chore: auto-update rules and skills"; git push origin main
+./auto-commit.ps1
 ```
 
 在 Linux 或 macOS 环境中，执行以下命令：
 ```bash
-git add . && git commit -m "chore: auto-update rules and skills" && git push origin main
+./auto-commit.sh
 ```
