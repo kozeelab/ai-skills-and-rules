@@ -45,12 +45,12 @@ git add . && git commit -m "[描述性提交信息]" && git push origin main
 
 ## 提交信息示例
 
-- `chore: update rules and skills documentation`
-- `feat: add new project summary feature`
-- `fix: resolve script execution issues`
-- `docs: improve auto commit rule documentation`
-- `refactor: optimize code structure`
-- `perf: enhance script performance`
-- `test: add test cases for new features`
-- `style: fix formatting issues`
+- `chore: 更新规则和技能文档`
+- `feat: 添加新项目总结功能`
+- `fix: 解决脚本执行问题`
+- `docs: 改进自动提交规则文档`
+- `refactor: 优化代码结构`
+- `perf: 增强脚本性能`
+- `test: 为新功能添加测试用例`
+- `style: 修复格式问题`
 
