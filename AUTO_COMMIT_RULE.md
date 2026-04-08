@@ -12,7 +12,7 @@
 
 ## 提交规范
 
-- **提交信息格式**：动态生成，每次提交信息不同
+- **提交信息格式**：每次提交使用不同的描述性信息
 - **提交范围**：所有修改的文件
 - **推送目标**：`origin main`
 
@@ -20,7 +20,7 @@
 
 1. 检测项目更改
 2. 添加所有更改到暂存区
-3. 生成动态提交信息（每次不同）
+3. 生成描述性提交信息（每次不同）
 4. 提交更改
 5. 推送到远程仓库
 
@@ -29,17 +29,28 @@
 - 确保远程仓库连接正常
 - 确保工作目录干净，避免冲突
 - 推送前验证更改内容
+- 每次提交使用不同的描述性信息
 
 ## 执行命令
 
-使用自动提交脚本：
-
 在 Windows 环境中，执行以下命令：
 ```powershell
-./auto-commit.ps1
+git add .; git commit -m "[描述性提交信息]"; git push origin main
 ```
 
 在 Linux 或 macOS 环境中，执行以下命令：
 ```bash
-./auto-commit.sh
+git add . && git commit -m "[描述性提交信息]" && git push origin main
 ```
+
+## 提交信息示例
+
+- `chore: update rules and skills documentation`
+- `feat: add new project summary feature`
+- `fix: resolve script execution issues`
+- `docs: improve auto commit rule documentation`
+- `refactor: optimize code structure`
+- `perf: enhance script performance`
+- `test: add test cases for new features`
+- `style: fix formatting issues`
+
