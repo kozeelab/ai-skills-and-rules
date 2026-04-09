@@ -4,272 +4,280 @@
 
 此 Skill 用于配置 Git 多环境隔离，实现：
 - **SSH Key 隔离**：不同代码托管平台（GitHub、Gitee、公司内部仓库等）使用不同的 SSH 密钥
-- **用户身份隔离**：不同仓库/目录自动使用不同的 `user.name` 和 `user.email`
+- **用户身份隔离**：根据远程仓库 URL（域名）自动切换 `user.name` 和 `user.email`，**无需按目录分类存放项目**
 
-> **核心目标**：一台机器上同时管理多个 Git 平台账号，互不干扰，自动切换。
+> **核心目标**：一台机器上同时管理多个 Git 平台账号，互不干扰，自动切换。即使所有项目都放在同一个目录下，也能根据远程仓库域名自动使用正确的身份。
 
 ---
 
-## 执行步骤
+## AI 执行流程
 
-### Step 1：收集用户环境信息
+> **极简交互**：用户只需提供 **域名、用户名、邮箱**，AI 直接执行所有配置并输出公钥。
 
-向用户确认以下信息：
+### 用户输入格式
 
-| 信息项 | 说明 | 示例 |
-|--------|------|------|
-| 需要隔离的平台数量 | 几个不同的 Git 托管平台 | 3个（GitHub、Gitee、公司 GitLab） |
-| 每个平台的 Host 地址 | SSH 连接的域名 | `github.com`、`gitee.com`、`git.company.com` |
-| 每个平台的用户名 | Git 提交时显示的名字 | `zhangsan`、`张三`、`san.zhang` |
-| 每个平台的邮箱 | Git 提交时显示的邮箱 | `zhangsan@gmail.com`、`zhangsan@company.com` |
-| 每个平台的本地代码目录 | 该平台仓库统一存放的目录 | `~/github/`、`~/gitee/`、`~/work/` |
-| 操作系统 | 用于确定路径和命令差异 | Linux / macOS / Windows |
+用户只需告诉 AI 以下信息（支持一次配置多个平台）：
 
-### Step 2：生成 SSH 密钥对
-
-为每个平台生成独立的 SSH 密钥对，**密钥文件名必须区分**：
-
-```bash
-# 示例：为三个平台分别生成密钥
-# -t ed25519 推荐使用 Ed25519 算法（更安全、更快）
-# -C 注释，方便识别密钥用途
-# -f 指定密钥文件路径，避免覆盖
-
-# GitHub
-ssh-keygen -t ed25519 -C "zhangsan@gmail.com" -f ~/.ssh/id_ed25519_github
-
-# Gitee
-ssh-keygen -t ed25519 -C "zhangsan@163.com" -f ~/.ssh/id_ed25519_gitee
-
-# 公司内部仓库
-ssh-keygen -t ed25519 -C "san.zhang@company.com" -f ~/.ssh/id_ed25519_company
+```
+帮我生成 SSH Key：
+- 域名：github.com，用户名：zhangsan，邮箱：zhangsan@gmail.com
+- 域名：gitee.com，用户名：张三，邮箱：zhangsan@163.com
+- 域名：git.company.com，用户名：san.zhang，邮箱：san.zhang@company.com
 ```
 
-> ⚠️ **注意事项**：
+### AI 执行步骤
+
+收到用户信息后，AI **按顺序自动执行以下所有步骤**，无需额外确认：
+
+#### Step 1：从域名提取平台标识
+
+从域名中提取简短标识，用于命名密钥文件：
+
+| 域名 | 平台标识 | 密钥文件名 |
+|------|----------|-----------|
+| `github.com` | `github` | `id_ed25519_github` |
+| `gitee.com` | `gitee` | `id_ed25519_gitee` |
+| `git.company.com` | `company`（取第二段） | `id_ed25519_company` |
+| `gitlab.example.org` | `example`（取第二段） | `id_ed25519_example` |
+
+> 提取规则：优先使用知名平台名（github/gitee/gitlab），否则取域名第二段作为标识。
+
+#### Step 2：生成 SSH 密钥对
+
+为每个平台执行密钥生成命令：
+
+```bash
+ssh-keygen -t ed25519 -C "{EMAIL}" -f ~/.ssh/id_ed25519_{PLATFORM} -N ""
+```
+
+> ⚠️ **注意**：
+> - 如果密钥文件已存在，**先询问用户是否覆盖**，避免误删已有密钥
+> - `-N ""` 表示不设置密码，方便自动化使用
 > - 如果目标平台不支持 Ed25519（极少数老旧系统），改用 `-t rsa -b 4096`
-> - 生成时会提示设置密码（passphrase），可留空直接回车，也可设置密码增强安全性
-> - 生成后会产生两个文件：`id_ed25519_xxx`（私钥）和 `id_ed25519_xxx.pub`（公钥）
 
-### Step 3：配置 SSH Config
+#### Step 3：追加 SSH Config
 
-编辑 `~/.ssh/config` 文件（不存在则创建），为每个平台配置独立的 Host 别名和密钥：
+向 `~/.ssh/config` 文件**追加**（不覆盖已有内容）该平台的配置：
 
 ```ssh-config
 # ============================================
-# GitHub
+# {PLATFORM} ({HOST})
 # ============================================
-Host github.com
-    HostName github.com
+Host {HOST}
+    HostName {HOST}
     User git
-    IdentityFile ~/.ssh/id_ed25519_github
-    IdentitiesOnly yes
-
-# ============================================
-# Gitee
-# ============================================
-Host gitee.com
-    HostName gitee.com
-    User git
-    IdentityFile ~/.ssh/id_ed25519_gitee
-    IdentitiesOnly yes
-
-# ============================================
-# 公司内部仓库（示例：GitLab 私有部署）
-# ============================================
-Host git.company.com
-    HostName git.company.com
-    User git
-    Port 22
-    IdentityFile ~/.ssh/id_ed25519_company
+    IdentityFile ~/.ssh/id_ed25519_{PLATFORM}
     IdentitiesOnly yes
 ```
 
-> 🔑 **关键参数说明**：
->
-> | 参数 | 说明 |
-> |------|------|
-> | `Host` | 别名，用于 SSH 连接时匹配规则。通常直接使用域名即可 |
-> | `HostName` | 实际的服务器域名或 IP |
-> | `User` | SSH 用户名，Git 托管平台统一为 `git` |
-> | `IdentityFile` | 指定该平台使用的私钥文件路径 |
-> | `IdentitiesOnly yes` | **强制**只使用指定的密钥，不尝试其他密钥（避免串用） |
-> | `Port` | SSH 端口，默认 22，部分公司内部仓库可能使用非标准端口 |
+> ⚠️ **注意**：
+> - 追加前检查文件中是否已存在该 Host 的配置，如果已存在则**更新**而非重复追加
+> - `IdentitiesOnly yes` 是关键，强制只使用指定密钥，防止串用
+> - 如果文件不存在，先创建并设置权限 `chmod 600 ~/.ssh/config`
 
-> 💡 **同一平台多账号场景**（如两个 GitHub 账号）：
->
-> ```ssh-config
-> # GitHub 个人账号
-> Host github-personal
->     HostName github.com
->     User git
->     IdentityFile ~/.ssh/id_ed25519_github_personal
->     IdentitiesOnly yes
->
-> # GitHub 工作账号
-> Host github-work
->     HostName github.com
->     User git
->     IdentityFile ~/.ssh/id_ed25519_github_work
->     IdentitiesOnly yes
-> ```
->
-> 此时 clone 仓库需使用别名：
-> ```bash
-> # 个人账号的仓库
-> git clone git@github-personal:username/repo.git
-> # 工作账号的仓库
-> git clone git@github-work:company/repo.git
-> ```
+#### Step 4：配置 Git 用户身份（基于远程仓库 URL 自动匹配）
 
-### Step 4：将公钥添加到对应平台
+利用 Git 的 `includeIf "hasconfig:remote.*.url:..."` 功能，**根据远程仓库的 URL 域名自动切换用户身份**。
 
-分别将每个公钥添加到对应平台的 SSH Keys 设置中：
+> 💡 **为什么不用 `gitdir` 按目录匹配？**
+> 因为用户的不同平台项目可能混放在同一个目录下（如 `~/projects/` 下同时有 GitHub 和公司仓库的项目），按目录无法区分。
+> `hasconfig:remote.*.url` 是按仓库的实际远程地址匹配，无论项目放在哪个目录都能正确识别。
 
-```bash
-# 查看公钥内容，复制到对应平台
-cat ~/.ssh/id_ed25519_github.pub    # → 添加到 GitHub Settings > SSH Keys
-cat ~/.ssh/id_ed25519_gitee.pub     # → 添加到 Gitee 设置 > SSH公钥
-cat ~/.ssh/id_ed25519_company.pub   # → 添加到公司 GitLab Settings > SSH Keys
-```
-
-各平台添加路径：
-- **GitHub**：Settings → SSH and GPG keys → New SSH key
-- **Gitee**：设置 → SSH公钥 → 添加公钥
-- **GitLab**：Preferences → SSH Keys → Add new key
-
-### Step 5：配置 Git 用户身份隔离（gitconfig 条件包含）
-
-利用 Git 的 **Conditional Includes**（条件包含）功能，根据仓库所在目录自动切换用户身份。
-
-#### 5.1 编辑全局 gitconfig
-
-编辑 `~/.gitconfig`（全局配置），添加条件包含规则：
+##### 4.1 在 `~/.gitconfig` 中追加条件包含
 
 ```ini
-# 全局默认配置（兜底）
+# 根据远程仓库 URL 自动切换身份
+# 匹配所有远程地址包含 {HOST} 的仓库
+
+[includeIf "hasconfig:remote.*.url:*{HOST}*"]
+    path = ~/.gitconfig-{PLATFORM}
+```
+
+> ⚠️ **重要说明**：
+> - `hasconfig:remote.*.url:` 需要 **Git 2.36+** 版本支持
+> - 通配符 `*{HOST}*` 会匹配所有包含该域名的远程 URL（SSH 和 HTTPS 均可匹配）
+> - 例如 `*github.com*` 会匹配 `git@github.com:user/repo.git` 和 `https://github.com/user/repo.git`
+> - 追加前检查是否已存在该平台的 includeIf 配置，避免重复
+
+##### 4.2 创建平台独立 gitconfig 文件
+
+```ini
+# ~/.gitconfig-{PLATFORM}
 [user]
-    name = 默认用户名
-    email = default@example.com
+    name = {USERNAME}
+    email = {EMAIL}
+```
 
-# 根据目录自动切换身份
-# 注意：路径末尾的 / 不能省略，表示匹配该目录及其所有子目录
+#### Step 5：输出公钥供用户复制
 
-# GitHub 项目目录
-[includeIf "gitdir:~/github/"]
+执行 `cat ~/.ssh/id_ed25519_{PLATFORM}.pub` 并将公钥内容直接展示给用户，同时告知添加路径：
+
+```
+🔑 {PLATFORM} ({HOST}) 的公钥如下，请复制到对应平台：
+
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... zhangsan@gmail.com
+
+📋 添加路径：
+- GitHub：Settings → SSH and GPG keys → New SSH key
+- Gitee：设置 → SSH公钥 → 添加公钥
+- GitLab：Preferences → SSH Keys → Add new key
+```
+
+#### Step 6：验证连接
+
+```bash
+ssh -T git@{HOST}
+```
+
+---
+
+## 关键技术方案：基于远程 URL 的身份自动切换
+
+### 方案对比
+
+| 方案 | 匹配依据 | 优点 | 缺点 | 适用场景 |
+|------|----------|------|------|----------|
+| `includeIf "gitdir:..."` | 仓库所在目录 | 简单直观，Git 2.13+ 即支持 | 要求不同平台项目放在不同目录 | 项目按平台分目录存放 |
+| `includeIf "hasconfig:remote.*.url:..."` | 远程仓库 URL | **项目可混放在任意目录** | 需要 Git 2.36+ | **项目混放在同一目录（推荐）** |
+| 仓库级 `.git/config` 手动配置 | 每个仓库单独设置 | 最灵活 | 每个仓库都要手动配 | 极少数特殊仓库 |
+
+### hasconfig 匹配规则详解
+
+```ini
+# 匹配所有远程 URL 包含 github.com 的仓库
+[includeIf "hasconfig:remote.*.url:*github.com*"]
     path = ~/.gitconfig-github
 
-# Gitee 项目目录
-[includeIf "gitdir:~/gitee/"]
+# 匹配所有远程 URL 包含 gitee.com 的仓库
+[includeIf "hasconfig:remote.*.url:*gitee.com*"]
     path = ~/.gitconfig-gitee
 
-# 公司项目目录
+# 匹配所有远程 URL 包含 git.company.com 的仓库
+[includeIf "hasconfig:remote.*.url:*git.company.com*"]
+    path = ~/.gitconfig-company
+```
+
+> **匹配逻辑**：
+> - `remote.*.url` 中的 `*` 匹配任意远程名称（origin、upstream 等）
+> - 值部分的 `*github.com*` 是 glob 模式，`*` 匹配任意字符
+> - SSH URL `git@github.com:user/repo.git` ✅ 匹配
+> - HTTPS URL `https://github.com/user/repo.git` ✅ 匹配
+
+### Git 版本要求
+
+```bash
+# 检查 Git 版本
+git --version
+# 需要 Git 2.36+ 才支持 hasconfig
+
+# 如果版本过低，升级方法：
+# Ubuntu/Debian
+sudo add-apt-repository ppa:git-core/ppa && sudo apt update && sudo apt install git
+# macOS
+brew install git
+# CentOS/RHEL
+sudo yum install https://packages.endpointdev.com/rhel/7/os/x86_64/endpoint-repo.x86_64.rpm && sudo yum install git
+```
+
+### 降级方案：Git 版本低于 2.36
+
+如果用户的 Git 版本低于 2.36，无法使用 `hasconfig`，提供以下降级方案：
+
+**方案 A：使用 `gitdir` 按目录匹配（需要按平台分目录存放项目）**
+
+```ini
+[includeIf "gitdir:~/github/"]
+    path = ~/.gitconfig-github
 [includeIf "gitdir:~/work/"]
     path = ~/.gitconfig-company
 ```
 
-> ⚠️ **重要注意事项**：
-> - `gitdir:` 后面的路径**末尾必须加 `/`**，表示匹配该目录及所有子目录
-> - 路径支持 `~` 表示 HOME 目录
-> - 路径支持通配符 `*`，如 `gitdir:~/projects/*/company/`
-> - Windows 用户路径使用 `/` 而非 `\`，如 `gitdir:C:/Users/zhangsan/github/`
-> - 条件包含的配置会**覆盖**全局默认配置中的同名项
+**方案 B：使用 Git Hook 自动设置（项目可混放）**
 
-#### 5.2 创建各平台的独立 gitconfig 文件
+创建全局 `post-checkout` hook，在 clone/checkout 时自动根据远程 URL 设置用户身份：
 
 ```bash
-# ~/.gitconfig-github
-[user]
-    name = zhangsan
-    email = zhangsan@gmail.com
+#!/bin/bash
+# ~/.config/git/hooks/post-checkout
+# 全局 hook：根据远程 URL 自动设置用户身份
 
-# ~/.gitconfig-gitee
-[user]
-    name = 张三
-    email = zhangsan@163.com
+REMOTE_URL=$(git remote get-url origin 2>/dev/null)
 
-# ~/.gitconfig-company
-[user]
-    name = san.zhang
-    email = san.zhang@company.com
+if echo "$REMOTE_URL" | grep -q "github.com"; then
+    git config user.name "zhangsan"
+    git config user.email "zhangsan@gmail.com"
+elif echo "$REMOTE_URL" | grep -q "gitee.com"; then
+    git config user.name "张三"
+    git config user.email "zhangsan@163.com"
+elif echo "$REMOTE_URL" | grep -q "git.company.com"; then
+    git config user.name "san.zhang"
+    git config user.email "san.zhang@company.com"
+fi
 ```
 
-> 💡 **除了 user 信息，还可以在独立 gitconfig 中配置其他差异化设置**：
->
-> ```ini
-> # ~/.gitconfig-company 示例：公司仓库可能需要代理
-> [user]
->     name = san.zhang
->     email = san.zhang@company.com
-> [http]
->     proxy = http://proxy.company.com:8080
-> [core]
->     autocrlf = input
-> ```
-
-### Step 6：验证配置
-
-#### 6.1 验证 SSH 连接
-
+启用全局 hook：
 ```bash
-# 测试 GitHub 连接
-ssh -T git@github.com
-# 期望输出：Hi zhangsan! You've successfully authenticated...
-
-# 测试 Gitee 连接
-ssh -T git@gitee.com
-# 期望输出：Hi 张三! You've successfully authenticated...
-
-# 测试公司仓库连接
-ssh -T git@git.company.com
-# 期望输出取决于公司 GitLab 配置
+git config --global core.hooksPath ~/.config/git/hooks
+chmod +x ~/.config/git/hooks/post-checkout
 ```
 
-#### 6.2 验证用户身份切换
+---
 
-```bash
-# 进入 GitHub 项目目录，检查身份
-cd ~/github/some-repo
-git config user.name   # 应输出：zhangsan
-git config user.email  # 应输出：zhangsan@gmail.com
+## 同一平台多账号场景
 
-# 进入公司项目目录，检查身份
-cd ~/work/some-repo
-git config user.name   # 应输出：san.zhang
-git config user.email  # 应输出：san.zhang@company.com
+当同一个平台（如 GitHub）需要使用多个账号时，SSH config 中使用 **Host 别名** 区分：
+
+```ssh-config
+# GitHub 个人账号
+Host github-personal
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519_github_personal
+    IdentitiesOnly yes
+
+# GitHub 工作账号
+Host github-work
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519_github_work
+    IdentitiesOnly yes
 ```
 
-#### 6.3 调试 SSH 连接问题
-
+此时 clone 仓库需使用别名替代域名：
 ```bash
-# 使用 -v 参数查看详细的 SSH 连接过程，确认使用了正确的密钥
-ssh -vT git@github.com
+# 个人账号的仓库
+git clone git@github-personal:username/repo.git
+# 工作账号的仓库
+git clone git@github-work:company/repo.git
+```
 
-# 关注输出中的这一行，确认加载了正确的密钥文件：
-# debug1: Offering public key: /home/user/.ssh/id_ed25519_github ED25519 ...
+对应的 gitconfig 身份匹配也需要使用别名：
+```ini
+[includeIf "hasconfig:remote.*.url:*github-personal*"]
+    path = ~/.gitconfig-github-personal
+[includeIf "hasconfig:remote.*.url:*github-work*"]
+    path = ~/.gitconfig-github-work
 ```
 
 ---
 
 ## 完整配置文件模板
 
-### 模板使用说明
+### 占位符说明
 
-将以下模板中的占位符替换为实际值：
-
-| 占位符 | 说明 |
-|--------|------|
-| `{PLATFORM}` | 平台标识（如 github、gitee、company） |
-| `{HOST}` | 平台域名（如 github.com） |
-| `{EMAIL}` | 该平台使用的邮箱 |
-| `{USERNAME}` | 该平台使用的用户名 |
-| `{DIR}` | 该平台仓库存放的本地目录 |
-| `{PORT}` | SSH 端口（默认 22） |
+| 占位符 | 说明 | 示例 |
+|--------|------|------|
+| `{PLATFORM}` | 平台标识 | `github`、`gitee`、`company` |
+| `{HOST}` | 平台域名 | `github.com`、`git.company.com` |
+| `{EMAIL}` | 该平台使用的邮箱 | `zhangsan@gmail.com` |
+| `{USERNAME}` | 该平台使用的用户名 | `zhangsan` |
+| `{PORT}` | SSH 端口（默认 22） | `22`、`443` |
 
 ### ~/.ssh/config 模板
 
 ```ssh-config
 # ============================================
-# {PLATFORM}
+# {PLATFORM} ({HOST})
 # ============================================
 Host {HOST}
     HostName {HOST}
@@ -282,7 +290,7 @@ Host {HOST}
 ### ~/.gitconfig 条件包含模板
 
 ```ini
-[includeIf "gitdir:{DIR}"]
+[includeIf "hasconfig:remote.*.url:*{HOST}*"]
     path = ~/.gitconfig-{PLATFORM}
 ```
 
@@ -301,11 +309,13 @@ Host {HOST}
 | 问题 | 可能原因 | 解决方案 |
 |------|----------|----------|
 | `Permission denied (publickey)` | 公钥未添加到平台 / 使用了错误的密钥 | 1. 确认公钥已添加到平台 2. `ssh -vT git@host` 检查加载的密钥是否正确 |
-| 提交后用户名/邮箱不对 | 条件包含路径配置错误 | 1. 检查 `gitdir:` 路径末尾是否有 `/` 2. 在仓库目录下执行 `git config user.name` 验证 |
+| 提交后用户名/邮箱不对 | `hasconfig` 未生效 | 1. 检查 Git 版本 ≥ 2.36 2. 确认仓库有远程 URL（`git remote -v`） 3. 检查 `~/.gitconfig` 中的 includeIf 语法 |
+| 新 clone 的仓库身份不对 | `hasconfig` 在首次 clone 时可能不生效 | clone 完成后执行 `git config user.name` 验证，如不对可手动 `git config user.name "xxx"` 或重新进入目录 |
 | SSH 连接超时 | 网络问题 / 端口被封 | 1. 检查网络 2. 尝试使用 HTTPS 端口：在 config 中设置 `Port 443`（GitHub 支持） |
 | `ssh-agent` 缓存了错误的密钥 | agent 中加载了多个密钥 | 1. `ssh-add -D` 清除所有缓存 2. 确保 config 中设置了 `IdentitiesOnly yes` |
-| Windows 下路径不生效 | 路径格式错误 | 使用 `/` 而非 `\`，如 `gitdir:C:/Users/xxx/github/` |
-| 同一平台多账号冲突 | Host 相同导致无法区分 | 使用 Host 别名（见 Step 3 中的多账号场景） |
+| Windows 下路径不生效 | 路径格式错误 | 使用 `/` 而非 `\`，如 `C:/Users/xxx/.ssh/id_ed25519_github` |
+| 同一平台多账号冲突 | Host 相同导致无法区分 | 使用 Host 别名（见「同一平台多账号场景」） |
+| `hasconfig` 不识别 | Git 版本低于 2.36 | 升级 Git 或使用降级方案（见「降级方案」） |
 
 ---
 
@@ -324,129 +334,14 @@ Host github.com
 
 ---
 
-## 一键初始化脚本
-
-> 以下脚本仅供参考，AI 应根据用户实际信息生成定制化脚本。
-
-```bash
-#!/bin/bash
-# Git 多环境隔离一键初始化脚本
-# 使用方法：根据实际情况修改下方配置后执行
-
-set -e
-
-# ==================== 配置区 ====================
-# 格式：平台标识|域名|端口|用户名|邮箱|本地目录
-CONFIGS=(
-    "github|github.com|22|zhangsan|zhangsan@gmail.com|~/github/"
-    "gitee|gitee.com|22|张三|zhangsan@163.com|~/gitee/"
-    "company|git.company.com|22|san.zhang|san.zhang@company.com|~/work/"
-)
-# ==================== 配置区 ====================
-
-SSH_DIR="$HOME/.ssh"
-mkdir -p "$SSH_DIR"
-chmod 700 "$SSH_DIR"
-
-# 备份已有配置
-[ -f "$SSH_DIR/config" ] && cp "$SSH_DIR/config" "$SSH_DIR/config.bak.$(date +%Y%m%d%H%M%S)"
-[ -f "$HOME/.gitconfig" ] && cp "$HOME/.gitconfig" "$HOME/.gitconfig.bak.$(date +%Y%m%d%H%M%S)"
-
-# 初始化 SSH config
-SSH_CONFIG=""
-GIT_CONFIG_INCLUDES=""
-
-for config in "${CONFIGS[@]}"; do
-    IFS='|' read -r platform host port username email dir <<< "$config"
-
-    key_file="$SSH_DIR/id_ed25519_$platform"
-
-    # 生成 SSH 密钥（如果不存在）
-    if [ ! -f "$key_file" ]; then
-        echo "🔑 为 $platform 生成 SSH 密钥..."
-        ssh-keygen -t ed25519 -C "$email" -f "$key_file" -N ""
-        echo "✅ 密钥已生成：$key_file"
-    else
-        echo "⏭️  $platform 密钥已存在，跳过生成"
-    fi
-
-    # 拼接 SSH config
-    SSH_CONFIG+="
-# ============================================
-# $platform
-# ============================================
-Host $host
-    HostName $host
-    User git
-    Port $port
-    IdentityFile $key_file
-    IdentitiesOnly yes
-"
-
-    # 创建平台独立 gitconfig
-    cat > "$HOME/.gitconfig-$platform" << EOF
-[user]
-    name = $username
-    email = $email
-EOF
-    echo "📝 已创建 ~/.gitconfig-$platform"
-
-    # 拼接 gitconfig 条件包含
-    # 展开 ~ 为实际路径
-    expanded_dir="${dir/#\~/$HOME}"
-    GIT_CONFIG_INCLUDES+="
-[includeIf \"gitdir:$dir\"]
-    path = ~/.gitconfig-$platform
-"
-
-    # 创建目录（如果不存在）
-    mkdir -p "$expanded_dir"
-done
-
-# 写入 SSH config
-echo "$SSH_CONFIG" > "$SSH_DIR/config"
-chmod 600 "$SSH_DIR/config"
-echo "✅ SSH config 已写入"
-
-# 写入全局 gitconfig（保留已有的非 includeIf 配置）
-cat > "$HOME/.gitconfig" << EOF
-[user]
-    name = default
-    email = default@example.com
-$GIT_CONFIG_INCLUDES
-EOF
-echo "✅ 全局 gitconfig 已写入"
-
-# 输出公钥信息
-echo ""
-echo "=========================================="
-echo "📋 请将以下公钥分别添加到对应平台："
-echo "=========================================="
-for config in "${CONFIGS[@]}"; do
-    IFS='|' read -r platform host port username email dir <<< "$config"
-    echo ""
-    echo "🔗 $platform ($host):"
-    echo "---"
-    cat "$SSH_DIR/id_ed25519_$platform.pub"
-    echo "---"
-done
-
-echo ""
-echo "🎉 配置完成！添加公钥后，可使用以下命令验证连接："
-for config in "${CONFIGS[@]}"; do
-    IFS='|' read -r platform host port username email dir <<< "$config"
-    echo "  ssh -T git@$host"
-done
-```
-
----
-
 ## 适用场景总结
 
 | 场景 | 解决方案 |
 |------|----------|
 | 不同平台使用不同 SSH Key | SSH config 中为每个 Host 指定不同的 IdentityFile |
-| 不同仓库使用不同用户名/邮箱 | gitconfig 条件包含（includeIf gitdir） |
+| 不同仓库使用不同用户名/邮箱（项目混放） | gitconfig `hasconfig:remote.*.url` 按远程 URL 匹配（推荐，需 Git 2.36+） |
+| 不同仓库使用不同用户名/邮箱（项目分目录） | gitconfig `gitdir` 按目录匹配（Git 2.13+ 即可） |
 | 同一平台多个账号 | SSH config 中使用 Host 别名区分 |
 | 公司仓库需要代理 | 在平台独立 gitconfig 中配置 http.proxy |
 | 22 端口被封 | 使用 443 端口（GitHub 支持 ssh.github.com:443） |
+| Git 版本低于 2.36 | 使用 gitdir 方案或全局 Git Hook 方案 |
