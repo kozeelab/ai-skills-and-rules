@@ -30,19 +30,12 @@
 收到用户信息后，AI **按顺序自动执行以下所有步骤**，无需额外确认。
 
 > ⚠️ **跨平台须知**：本 Skill 同时支持 **Linux/macOS** 和 **Windows** 系统。
-> AI 在执行命令时，必须根据用户的操作系统选择正确的命令和路径格式：
 >
-> | 项目 | Linux / macOS | Windows |
-> |------|--------------|----------|
-> | SSH 目录 | `~/.ssh/` | `%USERPROFILE%\.ssh\`（即 `C:\Users\{用户名}\.ssh\`） |
-> | gitconfig 位置 | `~/.gitconfig` | `%USERPROFILE%\.gitconfig`（即 `C:\Users\{用户名}\.gitconfig`） |
-> | Shell | bash / zsh | PowerShell / Git Bash |
-> | 查看文件内容 | `cat` | `type`（CMD）/ `Get-Content`（PowerShell）/ `cat`（Git Bash） |
-> | 设置文件权限 | `chmod 600` | 不需要（Windows 通过 ACL 管理权限，Git for Windows 会自动处理） |
-> | 路径分隔符 | `/` | `\`（命令行）或 `/`（Git 配置文件内部统一用 `/`） |
+> - **Windows 用户统一使用 Git Bash**（右键菜单「Git Bash Here」），Git Bash 提供了与 Linux/macOS 一致的 bash 环境，所有命令（`ssh-keygen`、`cat`、`chmod`、`mkdir -p` 等）和路径格式（`~/.ssh/`）**完全通用**，无需区分操作系统。
+> - **前提条件**：Windows 上需安装 [Git for Windows](https://gitforwindows.org/)，安装后自动获得 Git Bash。
+> - Git Bash 中 `~` 会自动解析为 `C:/Users/{用户名}`，所有配置文件路径统一使用 `/` 分隔符。
 >
-> **重要**：Git 配置文件（`~/.ssh/config`、`~/.gitconfig`）内部的路径**统一使用 `/`**，不受操作系统影响。
-> 例如 Windows 上 IdentityFile 也写成 `~/.ssh/id_ed25519_github`，Git 会自动解析 `~` 为用户目录。
+> 因此，**以下所有命令在 Linux/macOS/Windows(Git Bash) 上完全一致**，无需做任何区分。
 
 #### Step 1：从域名提取平台标识
 
@@ -59,19 +52,8 @@
 
 #### Step 2：生成 SSH 密钥对
 
-为每个平台执行密钥生成命令：
+为每个平台执行密钥生成命令（所有平台通用）：
 
-**Linux / macOS：**
-```bash
-ssh-keygen -t ed25519 -C "{EMAIL}" -f ~/.ssh/id_ed25519_{PLATFORM} -N ""
-```
-
-**Windows（PowerShell）：**
-```powershell
-ssh-keygen -t ed25519 -C "{EMAIL}" -f "$env:USERPROFILE\.ssh\id_ed25519_{PLATFORM}" -N '""'
-```
-
-**Windows（Git Bash）：**
 ```bash
 ssh-keygen -t ed25519 -C "{EMAIL}" -f ~/.ssh/id_ed25519_{PLATFORM} -N ""
 ```
@@ -80,8 +62,7 @@ ssh-keygen -t ed25519 -C "{EMAIL}" -f ~/.ssh/id_ed25519_{PLATFORM} -N ""
 > - 如果密钥文件已存在，**先询问用户是否覆盖**，避免误删已有密钥
 > - `-N ""` 表示不设置密码，方便自动化使用
 > - 如果目标平台不支持 Ed25519（极少数老旧系统），改用 `-t rsa -b 4096`
-> - **Windows 用户**需要确保已安装 OpenSSH 客户端（Win10 1809+ 自带，或通过 Git for Windows 附带）
-> - Windows 上如果 `~/.ssh/` 目录不存在，需先创建：`mkdir "$env:USERPROFILE\.ssh"`（PowerShell）
+> - 如果 `~/.ssh/` 目录不存在，需先创建：`mkdir -p ~/.ssh && chmod 700 ~/.ssh`
 
 #### Step 3：追加 SSH Config
 
@@ -101,9 +82,7 @@ Host {HOST}
 > ⚠️ **注意**：
 > - 追加前检查文件中是否已存在该 Host 的配置，如果已存在则**更新**而非重复追加
 > - `IdentitiesOnly yes` 是关键，强制只使用指定密钥，防止串用
-> - 如果文件不存在，先创建：
->   - **Linux/macOS**：`touch ~/.ssh/config && chmod 600 ~/.ssh/config`
->   - **Windows（PowerShell）**：`New-Item -Path "$env:USERPROFILE\.ssh\config" -ItemType File -Force`（无需 chmod，Windows 通过 ACL 管理权限）
+> - 如果文件不存在，先创建：`touch ~/.ssh/config && chmod 600 ~/.ssh/config`
 > - SSH config 文件内部的 `IdentityFile` 路径**统一使用 `~/.ssh/...` 格式**，Git/SSH 在所有平台上都能正确解析 `~`
 
 #### Step 4：配置 Git 用户身份（基于远程仓库 URL 自动匹配）
@@ -141,11 +120,11 @@ Host {HOST}
 
 #### Step 5：输出公钥供用户复制
 
-读取公钥文件内容并直接展示给用户：
+读取公钥文件内容并直接展示给用户（所有平台通用）：
 
-- **Linux/macOS**：`cat ~/.ssh/id_ed25519_{PLATFORM}.pub`
-- **Windows（PowerShell）**：`Get-Content "$env:USERPROFILE\.ssh\id_ed25519_{PLATFORM}.pub"`
-- **Windows（Git Bash）**：`cat ~/.ssh/id_ed25519_{PLATFORM}.pub`
+```bash
+cat ~/.ssh/id_ed25519_{PLATFORM}.pub
+```
 
 同时告知添加路径：
 
@@ -226,10 +205,7 @@ brew install git
 ```
 
 **Windows：**
-前往 [Git for Windows 官网](https://gitforwindows.org/) 下载最新版安装包，或使用 winget：
-```powershell
-winget install --id Git.Git -e --source winget
-```
+前往 [Git for Windows 官网](https://gitforwindows.org/) 下载最新版安装包覆盖安装即可，安装后自动获得最新版 Git 和 Git Bash。
 
 ### 降级方案：Git 版本低于 2.36
 
@@ -248,7 +224,7 @@ winget install --id Git.Git -e --source winget
 
 创建全局 `post-checkout` hook，在 clone/checkout 时自动根据远程 URL 设置用户身份。
 
-**Linux / macOS：**
+以下脚本和命令在所有平台（Linux/macOS/Windows Git Bash）上通用：
 
 ```bash
 #!/bin/bash
@@ -275,23 +251,6 @@ mkdir -p ~/.config/git/hooks
 git config --global core.hooksPath ~/.config/git/hooks
 chmod +x ~/.config/git/hooks/post-checkout
 ```
-
-**Windows（PowerShell 脚本）：**
-
-Windows 上 Git Hook 需要使用 bash 脚本（Git for Windows 自带 bash），脚本内容与 Linux 相同。
-区别在于 hook 目录位置和启用方式：
-
-```powershell
-# 创建 hook 目录
-New-Item -Path "$env:USERPROFILE\.config\git\hooks" -ItemType Directory -Force
-
-# 设置全局 hook 路径
-git config --global core.hooksPath "~/.config/git/hooks"
-```
-
-然后在 `%USERPROFILE%\.config\git\hooks\` 目录下创建 `post-checkout` 文件（无扩展名），内容与上方 Linux 版 bash 脚本完全相同。Git for Windows 会使用自带的 bash 来执行该脚本。
-
-> 💡 **提示**：Windows 上无需 `chmod +x`，Git for Windows 会自动处理脚本执行权限。
 
 ---
 
@@ -385,11 +344,11 @@ Host {HOST}
 | 新 clone 的仓库身份不对 | `hasconfig` 在首次 clone 时可能不生效 | clone 完成后执行 `git config user.name` 验证，如不对可手动 `git config user.name "xxx"` 或重新进入目录 |
 | SSH 连接超时 | 网络问题 / 端口被封 | 1. 检查网络 2. 尝试使用 HTTPS 端口：在 config 中设置 `Port 443`（GitHub 支持） |
 | `ssh-agent` 缓存了错误的密钥 | agent 中加载了多个密钥 | 1. `ssh-add -D` 清除所有缓存 2. 确保 config 中设置了 `IdentitiesOnly yes` |
-| Windows 下路径不生效 | 路径格式错误 | Git 配置文件内部统一使用 `/`，如 `~/.ssh/id_ed25519_github`；命令行中使用 `\` 或 `$env:USERPROFILE` |
+| Windows 下路径不生效 | 路径格式错误 | 使用 Git Bash 操作，路径统一使用 `/`，如 `~/.ssh/id_ed25519_github`，与 Linux 一致 |
 | 同一平台多账号冲突 | Host 相同导致无法区分 | 使用 Host 别名（见「同一平台多账号场景」） |
 | `hasconfig` 不识别 | Git 版本低于 2.36 | 升级 Git 或使用降级方案（见「降级方案」） |
-| Windows 上 `ssh-keygen` 找不到 | 未安装 OpenSSH 客户端 | Win10 1809+ 在「设置 → 应用 → 可选功能」中启用 OpenSSH 客户端，或使用 Git for Windows 自带的 ssh-keygen |
-| Windows 上 SSH config 不生效 | config 文件有 BOM 头或编码错误 | 确保 `~/.ssh/config` 文件为 UTF-8 无 BOM 编码，可用 `notepad++` 或 VS Code 检查 |
+| Windows 上 `ssh-keygen` 找不到 | 未安装 Git for Windows | 前往 [gitforwindows.org](https://gitforwindows.org/) 安装，安装后 Git Bash 自带 `ssh-keygen`、`ssh`、`cat` 等命令 |
+| Windows 上 SSH config 不生效 | config 文件有 BOM 头或编码错误 | 确保 `~/.ssh/config` 文件为 UTF-8 无 BOM 编码，建议始终在 Git Bash 中用 `vi` 或通过命令追加内容，避免用记事本编辑 |
 
 ---
 
