@@ -183,7 +183,7 @@ for i, _ := range items {
 ## 6. 导入规范
 
 ### 6.1 导入分组
-- 标准库 → 内部包 → 第三方包
+- 标准库 → 第三方包 → 内部包
 - 按字母排序
 - 禁止使用相对路径
 
@@ -208,72 +208,3 @@ import (
 )
 ```
 
-## 7. 代码示例
-
-### 7.1 正确示例
-
-```go
-// Package user 用户相关功能
-package user
-
-import (
-    "context"
-    "fmt"
-
-    "yourproject/internal/entity"
-    "yourproject/internal/errno"
-    "yourproject/internal/repository"
-)
-
-// Service 用户服务
-type Service struct {
-    repo *repository.UserRepository
-}
-
-// NewService 创建用户服务实例
-func NewService(repo *repository.UserRepository) *Service {
-    return &Service{repo: repo}
-}
-
-// GetUserByID 根据ID获取用户
-func (s *Service) GetUserByID(ctx context.Context, id uint) (*entity.User, error) {
-    user, err := s.repo.GetByID(ctx, id)
-    if err != nil {
-        return nil, fmt.Errorf("get user by id failed: %w", err)
-    }
-    return user, nil
-}
-```
-
-### 7.2 错误示例
-
-```go
-package user
-
-import (
-    "yourproject/internal/entity"
-    "fmt"
-    "context"
-    "github.com/gin-gonic/gin"
-)
-
-// service 用户服务
-type service struct {
-    repo *userRepository
-}
-
-func NewService(repo *userRepository) *service {
-    return &service{repo: repo}
-}
-
-func (s *service) get_user_by_id(ctx context.Context, id uint) (*entity.User, error) {
-    if id == 0 {
-        return nil, fmt.Errorf("id is zero")
-    }
-    user, err := s.repo.get_by_id(ctx, id)
-    if err != nil {
-        return nil, err
-    }
-    return user, nil
-}
-```
