@@ -37,6 +37,17 @@
 >
 > 因此，**以下所有命令在 Linux/macOS/Windows(Git Bash) 上完全一致**，无需做任何区分。
 
+> 🖥️ **Windows 用户如需 AI 自动执行命令**（而非手动复制粘贴到 Git Bash），请将 IDE 的默认终端设置为 Git Bash：
+>
+> | IDE | 设置方法 |
+> |-----|----------|
+> | **VS Code** | `Ctrl+Shift+P` → 搜索 `Terminal: Select Default Profile` → 选择 **Git Bash** |
+> | **JetBrains 系列**（IntelliJ / GoLand / WebStorm 等） | Settings → Tools → Terminal → Shell path → 设为 `C:\Program Files\Git\bin\bash.exe`（根据实际安装路径调整） |
+> | **Cursor** | 同 VS Code，`Ctrl+Shift+P` → `Terminal: Select Default Profile` → **Git Bash** |
+>
+> 设置后，AI 通过终端执行的所有命令将自动在 Git Bash 环境中运行，无需手动打开 Git Bash 窗口。
+> Linux/macOS 用户无需任何额外设置，默认 Shell 即为 bash/zsh。
+
 #### Step 1：从域名提取平台标识
 
 从域名中提取简短标识，用于命名密钥文件：
