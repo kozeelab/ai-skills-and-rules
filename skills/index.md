@@ -4,9 +4,9 @@
 
 ## 索引元信息
 
-- **索引版本**：1.0.0
-- **最后更新**：2026-04-09
-- **Skill 总数**：2
+- **索引版本**：1.1.0
+- **最后更新**：2026-04-11
+- **Skill 总数**：3
 - **索引维护方式**：AI 自动维护（见底部维护指令）
 
 ---
@@ -17,6 +17,7 @@
 |------------|---------|----------|--------|
 | 项目总结 | [project-summary.md](./project-summary.md) | 高质量项目经历生成（含写作方法论+避坑清单+岗位适配） | `简历`, `项目总结`, `量化指标`, `差异化`, `岗位适配` |
 | Git 多环境隔离 | [git-multi-env.md](./git-multi-env.md) | Git SSH Key 多环境隔离（基于远程 URL 自动匹配身份，项目可混放同一目录） | `git`, `ssh`, `多账号`, `环境隔离`, `gitconfig`, `hasconfig` |
+| Awesome Design | [awesome-design.md](./awesome-design.md) | 从 awesome-design-md 仓库获取知名品牌设计系统，生成 DESIGN.md 文件 | `DESIGN.md`, `设计系统`, `UI`, `设计模板`, `品牌设计` |
 
 ---
 
@@ -37,6 +38,14 @@
 - **适用场景**：一台机器管理多个 Git 平台账号、同一平台多账号、快速生成 SSH Key
 - **输入**：用户提供域名、用户名、邮箱
 - **输出**：自动执行密钥生成 + SSH config + gitconfig 配置 + 输出公钥
+
+### 📋 awesome-design
+
+- **文件**：[awesome-design.md](./awesome-design.md)
+- **功能**：从 awesome-design-md 仓库获取 60+ 知名品牌的设计系统（DESIGN.md），包括 Vercel、Stripe、Claude、Linear 等，快速为项目引入专业设计系统
+- **适用场景**：为新项目选择设计风格、快速生成 UI 设计系统、让 AI 代理根据品牌风格生成一致的 UI
+- **输入**：用户选择品牌名称（如 vercel、stripe、claude 等）
+- **输出**：在项目根目录生成对应的 DESIGN.md 文件
 
 ---
 
