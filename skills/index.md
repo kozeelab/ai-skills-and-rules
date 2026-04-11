@@ -20,7 +20,7 @@
 | Awesome Design | [awesome-design.md](./awesome-design.md) | 从 awesome-design-md 仓库获取知名品牌设计系统，生成 DESIGN.md 文件 | `DESIGN.md`, `设计系统`, `UI`, `设计模板`, `品牌设计` |
 | 提示词自动优化器 | [prompt-optimizer.md](./prompt-optimizer.md) | 自动拦截用户与 AI 的对话，优化提示词结构和表达，提升 AI 响应质量 | `提示词优化`, `prompt engineering`, `对话拦截`, `AI 交互`, `自动化` |
 | AI 不足捕捉与规则生成器 | [ai-rule-generator.md](./ai-rule-generator.md) | 自动捕捉 AI 的不足之处，分析根因并生成规则文件，持续提升协作质量 | `规则生成`, `AI 改进`, `质量提升`, `自动化`, `规范管理`, `持续优化` |
-| Skill 自动激活守护器 | [skill-auto-activator.md](./skill-auto-activator.md) | 自动开启所有需要后台运行的 Skill，持续监控工作状态，确保自动化体系正常运转 | `Skill 管理`, `自动激活`, `守护进程`, `状态监控`, `编排` |
+| Skill 自动激活守护器 | [skill-auto-activator.md](./skill-auto-activator.md) | 一键冷启动（`#start`）：加载所有规则 + 激活所有自动化 Skill，确保 AI 从新对话第一条消息起就处于最佳工作状态 | `Skill 管理`, `自动激活`, `守护进程`, `状态监控`, `编排`, `规则加载`, `一键启动`, `冷启动` |
 | 代码自动审查与修复器 | [code-review-auto-fix.md](./code-review-auto-fix.md) | 自动审查 AI 生成的代码，基于 rules/ 规范 + 通用软件工程最佳实践双层体系全方位检查，发现问题自动修复直到合规 | `代码审查`, `自动修复`, `代码质量`, `规范检查`, `code review`, `SOLID`, `最佳实践` |
 | Skill 质量守护者 | [skill-quality-guardian.md](./skill-quality-guardian.md) | 自动学习最新 AI 知识，基于前沿最佳实践审查和完善所有 Skill，确保 Skill 体系始终高质量 | `Skill 质量`, `自动完善`, `AI 知识学习`, `持续改进`, `质量保障`, `最佳实践` |
 
@@ -71,10 +71,10 @@
 ### 📋 skill-auto-activator
 
 - **文件**：[skill-auto-activator.md](./skill-auto-activator.md)
-- **功能**：作为 Skill 体系的守护进程，自动扫描 skills/index.md 识别所有需要后台运行的自动化 Skill，统一激活并持续监控其工作状态，确保整个自动化 Skill 体系始终正常运转
-- **适用场景**：每次对话开始时自动激活所有自动化 Skill、持续监控 Skill 运行健康状态、新增自动化 Skill 时自动发现并热激活
-- **输入**：skills/index.md 索引文件和各 Skill 文件内容
-- **输出**：激活状态报告 + 健康检查报告
+- **功能**：作为整个 AI 协作体系的启动引擎 + 守护进程，提供 `#start` 一键冷启动指令，在每次全新对话中完成「加载规则 → 激活 Skill → 输出状态报告」的完整启动序列，确保 AI 从第一条消息起就处于规则约束 + Skill 增强的最佳工作状态
+- **适用场景**：每次新对话一键冷启动（`#start`）、加载所有规则并激活所有自动化 Skill、持续监控 Skill 运行健康状态和规则遵守情况、新增自动化 Skill 时自动发现并热激活
+- **输入**：skills/index.md 索引文件、rules/index.md 索引文件和各 Skill/Rule 文件内容
+- **输出**：冷启动报告（规则加载 + Skill 激活）+ 健康检查报告
 
 ### 📋 code-review-auto-fix
 
