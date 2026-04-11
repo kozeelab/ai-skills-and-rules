@@ -1,3 +1,58 @@
+---
+name: "skill-creator"
+displayName: "Skill 创建器"
+description: "标准化 Skill 创建流程，快速生成结构规范、可分发的 Skill 包（.zip 或 .skill 文件）"
+version: "1.0.0"
+
+author:
+  name: "kozee"
+  url: "https://github.com/kozeelab"
+
+category: "productivity"
+tags:
+  - "Skill 创建"
+  - "脚手架"
+  - "标准化"
+  - "打包"
+  - "SKILL.md"
+
+compatibility:
+  platforms:
+    - "linux"
+    - "macos"
+    - "windows"
+  languages:
+    - "any"
+  tools:
+    - "zip"
+
+input:
+  description: "技能的功能描述和基本信息"
+  required:
+    - name: "skill_description"
+      type: "string"
+      description: "技能的功能描述，AI 据此生成完整的 Skill 包"
+  optional:
+    - name: "skill_name"
+      type: "string"
+      description: "技能名称（英文 kebab-case），不提供则由 AI 自动推断"
+      default: ""
+    - name: "output_format"
+      type: "string"
+      description: "输出格式：zip 或 skill"
+      default: "zip"
+
+output:
+  description: "结构规范的 Skill 包文件"
+  artifacts:
+    - name: "skill_package"
+      type: "file"
+      description: "打包后的 .zip 或 .skill 文件"
+    - name: "skill_md"
+      type: "file"
+      description: "生成的 SKILL.md 元数据文件"
+---
+
 # Skill 创建器 Skill
 
 ## 功能说明

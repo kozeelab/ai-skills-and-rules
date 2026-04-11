@@ -4,9 +4,9 @@
 
 ## 索引元信息
 
-- **索引版本**：1.6.0
+- **索引版本**：1.7.0
 - **最后更新**：2026-04-11
-- **Skill 总数**：8
+- **Skill 总数**：9
 - **索引维护方式**：AI 自动维护（见底部维护指令）
 
 ---
@@ -23,6 +23,7 @@
 | Skill 自动激活守护器 | [skill-auto-activator.md](./skill-auto-activator.md) | 一键冷启动（`#start`）：加载所有规则 + 激活所有自动化 Skill，确保 AI 从新对话第一条消息起就处于最佳工作状态 | `Skill 管理`, `自动激活`, `守护进程`, `状态监控`, `编排`, `规则加载`, `一键启动`, `冷启动` |
 | 代码自动审查与修复器 | [code-review-auto-fix.md](./code-review-auto-fix.md) | 自动审查 AI 生成的代码，基于 rules/ 规范 + 通用软件工程最佳实践双层体系全方位检查，发现问题自动修复直到合规 | `代码审查`, `自动修复`, `代码质量`, `规范检查`, `code review`, `SOLID`, `最佳实践` |
 | Skill 质量守护者 | [skill-quality-guardian.md](./skill-quality-guardian.md) | 自动学习最新 AI 知识，基于前沿最佳实践审查和完善所有 Skill，确保 Skill 体系始终高质量 | `Skill 质量`, `自动完善`, `AI 知识学习`, `持续改进`, `质量保障`, `最佳实践` |
+| Skill 创建器 | [skill-creator.md](./skill-creator.md) | 标准化 Skill 创建流程，快速生成结构规范、可分发的 Skill 包 | `Skill 创建`, `脚手架`, `标准化`, `打包`, `SKILL.md` |
 
 ---
 
@@ -91,6 +92,14 @@
 - **适用场景**：新 Skill 创建后自动质量审查、定期对所有 Skill 进行全量审查、基于最新 AI 知识升级已有 Skill、查看 Skill 质量评分排行
 - **输入**：Skill 文件内容、AI 领域最新知识、用户反馈
 - **输出**：经过质量审查和完善后的高质量 Skill 文件 + 质量审查报告 + 知识更新清单
+
+### 📋 skill-creator
+
+- **文件**：[skill-creator.md](./skill-creator.md)
+- **功能**：标准化 Skill 创建流程，快速生成结构规范、可分发的 Skill 包（.zip 或 .skill 文件），包含完整的 SKILL.md 元数据和目录结构
+- **适用场景**：创建新的可分发 Skill、将已有功能打包为标准 Skill 包、快速生成 Skill 脚手架
+- **输入**：技能的功能描述和基本信息
+- **输出**：打包后的 .zip 或 .skill 文件，包含 SKILL.md 和附属文件
 
 ---
 

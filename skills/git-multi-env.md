@@ -1,3 +1,57 @@
+---
+name: "git-multi-env"
+displayName: "Git 多环境隔离"
+description: "Git SSH Key 多环境隔离配置，基于远程仓库 URL 自动匹配用户身份，项目可混放同一目录"
+version: "1.0.0"
+
+author:
+  name: "kozee"
+  url: "https://github.com/kozeelab"
+
+category: "devops"
+tags:
+  - "git"
+  - "ssh"
+  - "多账号"
+  - "环境隔离"
+  - "gitconfig"
+  - "hasconfig"
+
+compatibility:
+  platforms:
+    - "linux"
+    - "macos"
+    - "windows"
+  languages:
+    - "any"
+  tools:
+    - "git"
+    - "ssh-keygen"
+
+input:
+  description: "用户提供域名、用户名、邮箱"
+  required:
+    - name: "platforms"
+      type: "array"
+      description: "平台配置列表，每项包含域名(host)、用户名(username)、邮箱(email)"
+
+output:
+  description: "自动执行密钥生成 + SSH config + gitconfig 配置 + 输出公钥"
+  artifacts:
+    - name: "ssh_keys"
+      type: "file"
+      description: "生成的 SSH 密钥对文件"
+    - name: "ssh_config"
+      type: "file"
+      description: "更新后的 ~/.ssh/config 文件"
+    - name: "gitconfig"
+      type: "file"
+      description: "更新后的 ~/.gitconfig 及平台独立 gitconfig 文件"
+    - name: "public_keys"
+      type: "string"
+      description: "各平台的公钥内容，供用户复制到对应平台"
+---
+
 # Git SSH Key 多环境隔离 Skill
 
 ## 功能说明

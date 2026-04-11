@@ -1,3 +1,51 @@
+---
+name: "awesome-design"
+displayName: "Awesome Design"
+description: "从 awesome-design-md 仓库获取知名品牌设计系统，生成 DESIGN.md 文件，让 AI 生成风格一致的 UI"
+version: "1.0.0"
+
+author:
+  name: "kozee"
+  url: "https://github.com/kozeelab"
+
+category: "design"
+tags:
+  - "DESIGN.md"
+  - "设计系统"
+  - "UI"
+  - "设计模板"
+  - "品牌设计"
+
+compatibility:
+  platforms:
+    - "linux"
+    - "macos"
+    - "windows"
+  languages:
+    - "any"
+  tools:
+    - "curl"
+
+input:
+  description: "用户选择的品牌名称或项目类型"
+  required:
+    - name: "brand_name"
+      type: "string"
+      description: "目标品牌名称（如 vercel、stripe、claude 等），用于获取对应的 DESIGN.md"
+  optional:
+    - name: "project_type"
+      type: "string"
+      description: "项目类型（如开发者工具、SaaS、AI 产品等），用于推荐合适的设计风格"
+      default: ""
+
+output:
+  description: "在项目根目录生成对应的 DESIGN.md 文件"
+  artifacts:
+    - name: "design_md"
+      type: "file"
+      description: "目标品牌的 DESIGN.md 设计系统文件"
+---
+
 # Awesome DESIGN.md Skill
 
 ## 功能说明

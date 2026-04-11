@@ -1,3 +1,49 @@
+---
+name: "project-summary"
+displayName: "项目总结"
+description: "高质量项目经历生成，内置写作方法论、差异化策略、避坑清单和岗位适配策略，适合直接复制到简历"
+version: "1.0.0"
+
+author:
+  name: "kozee"
+  url: "https://github.com/kozeelab"
+
+category: "productivity"
+tags:
+  - "简历"
+  - "项目总结"
+  - "量化指标"
+  - "差异化"
+  - "岗位适配"
+
+compatibility:
+  platforms:
+    - "linux"
+    - "macos"
+    - "windows"
+  languages:
+    - "any"
+
+input:
+  description: "一个可分析的项目代码库"
+  required:
+    - name: "project_codebase"
+      type: "directory"
+      description: "项目代码库路径，用于分析项目结构和技术栈"
+  optional:
+    - name: "target_level"
+      type: "string"
+      description: "目标岗位级别：junior（初/中级）、senior（高级）、architect（架构师）、manager（技术管理）"
+      default: "senior"
+
+output:
+  description: "精炼的简历项目经历文本（10-15行）"
+  artifacts:
+    - name: "project_experience"
+      type: "string"
+      description: "适合直接复制到简历的项目经历文本"
+---
+
 # 项目总结 Skill
 
 ## 功能说明
