@@ -69,7 +69,52 @@ output:
 
 ## Skill 包结构规范
 
-### 目录结构
+### Skill 文件结构
+
+Skill 支持两种文件结构，根据复杂度选择：
+
+#### 结构一：单文件 Skill（简单 Skill）
+
+```
+skills/
+└── my-skill.md           ← 单个 Markdown 文件，包含 YAML Front Matter + 正文
+```
+
+适用于：功能简单、无附属资源的 Skill（如 git-multi-env、project-summary）
+
+#### 结构二：目录 Skill（复杂 Skill）
+
+```
+skills/
+└── my-skill/
+    ├── SKILL.md              ← 【必需】技能元数据文件（YAML Front Matter + 正文）
+    ├── sub-prompt-1.md       ← 【可选】子 Prompt 文件（如审查模板、角色 Prompt）
+    ├── sub-prompt-2.md       ← 【可选】子 Prompt 文件
+    ├── README.md             ← 【可选】详细使用说明
+    ├── templates/            ← 【可选】模板文件目录
+    │   └── ...
+    ├── scripts/              ← 【可选】脚本文件目录
+    │   └── ...
+    ├── examples/             ← 【可选】示例文件目录
+    │   └── ...
+    └── assets/               ← 【可选】静态资源目录
+        └── ...
+```
+
+适用于：功能复杂、需要附属资源的 Skill（如 subagent-driven-development、test-driven-development）
+
+#### 选择建议
+
+| 场景 | 推荐结构 | 原因 |
+|------|---------|------|
+| 无附属文件 | 单文件 | 简单直接 |
+| 有子 Prompt 模板 | 目录 | 子 Prompt 独立管理 |
+| 有脚本/模板 | 目录 | 资源文件独立管理 |
+| 工作流 Skill | 目录（推荐） | 通常有附属资源 |
+
+### 可分发 Skill 包结构
+
+用于打包分发的 `.zip` 或 `.skill` 文件结构：
 
 ```
 my-skill/
@@ -118,6 +163,15 @@ compatibility:
     - "any"
   tools:                               # 依赖的外部工具
     - "git"
+
+# ===== 工作流编排（可选，工作流 Skill 必填）=====
+workflow:
+  triggers:                            # 触发条件列表
+    - "用户提出新功能需求"
+    - "用户描述要构建的东西"
+  next_skills:                         # 后续 Skill 列表
+    - "writing-plans"
+  priority: 1                          # 工作流优先级（数字越小越先执行）
 
 # ===== 输入输出（必填）=====
 input:
