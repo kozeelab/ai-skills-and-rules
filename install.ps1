@@ -42,6 +42,12 @@ $EntryFiles = [ordered]@{
     ".trae/rules/main.md"        = "Trae 自动加载规则"
 }
 
+# 需要链接的核心目录（skills 和 rules）
+$CoreDirs = [ordered]@{
+    "skills" = "技能体系目录"
+    "rules"  = "规则体系目录"
+}
+
 # ── 帮助信息 ──────────────────────────────────────────────────────────────────
 function Show-Help {
     Write-Host @"
@@ -78,6 +84,10 @@ function Show-Help {
     .cursorrules                 → Cursor 自动加载规则
     .codebuddy/rules/main.md     → CodeBuddy 自动加载规则
     .trae/rules/main.md          → Trae 自动加载规则
+
+  安装的核心目录:
+    skills/                      → 技能体系目录
+    rules/                       → 规则体系目录
 
 "@
 }
@@ -321,14 +331,72 @@ function Install-Plugin {
     if ($skipped -gt 0)   { Write-Info "已跳过: $skipped 个文件" }
     if ($failed -gt 0)    { Write-Err "失败:   $failed 个文件" }
 
+    # 安装核心目录（skills 和 rules）的符号链接
+    Write-Host ""
+    Write-Header "📂 安装核心目录"
+
+    foreach ($dir in $CoreDirs.Keys) {
+        $source = Join-Path $ScriptDir $dir
+        $targetDir2 = Join-Path $Target $dir
+
+        if (-not (Test-Path $source)) {
+            Write-Err "$dir/ — 源目录不存在，跳过"
+            $failed++
+            continue
+        }
+
+        $item = Get-Item $targetDir2 -ErrorAction SilentlyContinue
+        if ($null -ne $item) {
+            if ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+                $existingTarget = $item.Target
+                if ($existingTarget -like "*$RepoName*") {
+                    Write-Info "$dir/ — 已安装，跳过"
+                    $skipped++
+                    continue
+                }
+                else {
+                    Write-Warn "$dir/ — 已存在不同的符号链接 → $existingTarget"
+                    $overwrite = Read-Host "  是否覆盖？[y/N]"
+                    if ($overwrite -ne "y" -and $overwrite -ne "Y") {
+                        $skipped++
+                        continue
+                    }
+                    Remove-Item $targetDir2 -Force
+                }
+            }
+            else {
+                Write-Warn "$dir/ — 目标已存在普通目录"
+                $overwrite = Read-Host "  是否备份并覆盖？[y/N]"
+                if ($overwrite -ne "y" -and $overwrite -ne "Y") {
+                    $skipped++
+                    continue
+                }
+                Move-Item $targetDir2 "$targetDir2.bak" -Force
+                Write-Info "$dir/ — 已备份为 $dir.bak"
+            }
+        }
+
+        try {
+            New-Item -ItemType SymbolicLink -Path $targetDir2 -Target $source -ErrorAction Stop | Out-Null
+            $linkTarget2 = Join-Path $relPath $dir
+            Write-Success "$dir/ → $linkTarget2"
+            $installed++
+        }
+        catch {
+            Write-Err "$dir/ — 创建符号链接失败: $_"
+            $failed++
+        }
+    }
+
     if ($installed -gt 0) {
         Write-Host ""
         Write-Info "现在你可以在 $Target 中使用 AI 编码工具，"
         Write-Info "它们会自动加载本仓库的规则和 Skill 体系。"
 
-        # 自动添加 .gitignore 忽略规则
+        # 自动添加 .gitignore 忽略规则（入口文件 + 核心目录）
+        $allIgnoreFiles = $selectedFiles + @($CoreDirs.Keys)
         Write-Host ""
-        Add-GitignoreRules -Target $Target -Files $selectedFiles
+        Add-GitignoreRules -Target $Target -Files $allIgnoreFiles
     }
 }
 
@@ -370,12 +438,47 @@ function Uninstall-Plugin {
         }
     }
 
+    # 卸载核心目录符号链接
+    foreach ($dir in $CoreDirs.Keys) {
+        $targetDir2 = Join-Path $Target $dir
+
+        $item = Get-Item $targetDir2 -ErrorAction SilentlyContinue
+        if ($null -ne $item) {
+            if ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+                $linkTarget = $item.Target
+                if ($linkTarget -like "*$RepoName*") {
+                    Remove-Item $targetDir2 -Force
+                    Write-Success "$dir/ — 已移除"
+                    $removed++
+                }
+                else {
+                    Write-Warn "$dir/ — 符号链接指向其他位置 ($linkTarget)，跳过"
+                }
+            }
+            else {
+                Write-Warn "$dir/ — 是普通目录而非符号链接，跳过（请手动处理）"
+            }
+        }
+        else {
+            Write-Info "$dir/ — 不存在，跳过"
+            $notFound++
+        }
+    }
+
     # 恢复备份
     foreach ($file in $EntryFiles.Keys) {
         $backup = Join-Path $Target "$file.bak"
         if (Test-Path $backup) {
             Move-Item $backup (Join-Path $Target $file) -Force
             Write-Info "$file — 已从备份恢复"
+        }
+    }
+
+    foreach ($dir in $CoreDirs.Keys) {
+        $backup = Join-Path $Target "$dir.bak"
+        if (Test-Path $backup) {
+            Move-Item $backup (Join-Path $Target $dir) -Force
+            Write-Info "$dir/ — 已从备份恢复"
         }
     }
 
@@ -446,6 +549,47 @@ function Show-Status {
         else {
             $status = "❌ 未安装"
             Write-Host ("  {0,-25} " -f $file) -NoNewline
+            Write-Host ("{0,-15}" -f $status) -ForegroundColor Red
+        }
+    }
+
+    Write-Host ""
+    Write-Host ("  {0,-25} {1,-15} {2}" -f "核心目录", "状态", "详情") -ForegroundColor White
+    Write-Host ("  {0,-25} {1,-15} {2}" -f ("─" * 25), ("─" * 15), ("─" * 25))
+
+    foreach ($dir in $CoreDirs.Keys) {
+        $targetDir2 = Join-Path $Target $dir
+
+        $item = Get-Item $targetDir2 -ErrorAction SilentlyContinue
+        if ($null -ne $item) {
+            if ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+                $linkTarget = $item.Target
+                if ($linkTarget -like "*$RepoName*") {
+                    $status = "✅ 已安装"
+                    $detail = "→ $linkTarget"
+                    Write-Host ("  {0,-25} " -f "$dir/") -NoNewline
+                    Write-Host ("{0,-15} " -f $status) -ForegroundColor Green -NoNewline
+                    Write-Host $detail
+                }
+                else {
+                    $status = "⚠️  其他链接"
+                    $detail = "→ $linkTarget"
+                    Write-Host ("  {0,-25} " -f "$dir/") -NoNewline
+                    Write-Host ("{0,-15} " -f $status) -ForegroundColor Yellow -NoNewline
+                    Write-Host $detail
+                }
+            }
+            else {
+                $status = "⚠️  普通目录"
+                $detail = "非符号链接"
+                Write-Host ("  {0,-25} " -f "$dir/") -NoNewline
+                Write-Host ("{0,-15} " -f $status) -ForegroundColor Yellow -NoNewline
+                Write-Host $detail
+            }
+        }
+        else {
+            $status = "❌ 未安装"
+            Write-Host ("  {0,-25} " -f "$dir/") -NoNewline
             Write-Host ("{0,-15}" -f $status) -ForegroundColor Red
         }
     }

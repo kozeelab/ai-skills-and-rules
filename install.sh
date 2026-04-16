@@ -47,6 +47,12 @@ DIR_ENTRY_FILES=(
     ".trae/rules/main.md"        # Trae 自动加载规则
 )
 
+# 需要链接的核心目录（skills 和 rules）
+CORE_DIRS=(
+    "skills"    # 技能体系目录
+    "rules"     # 规则体系目录
+)
+
 # 合并所有入口文件（用于状态查看和卸载）
 ALL_ENTRY_FILES=("${ENTRY_FILES[@]}" "${DIR_ENTRY_FILES[@]}")
 
@@ -59,6 +65,8 @@ declare -A FILE_DESC=(
     [".cursorrules"]="Cursor 自动加载规则"
     [".codebuddy/rules/main.md"]="CodeBuddy 自动加载规则"
     [".trae/rules/main.md"]="Trae 自动加载规则"
+    ["skills"]="技能体系目录"
+    ["rules"]="规则体系目录"
 )
 
 # ── 帮助信息 ──────────────────────────────────────────────────────────────────
@@ -92,6 +100,10 @@ show_help() {
     .cursorrules                 → Cursor 自动加载规则
     .codebuddy/rules/main.md     → CodeBuddy 自动加载规则
     .trae/rules/main.md          → Trae 自动加载规则
+
+  安装的核心目录:
+    skills/                      → 技能体系目录
+    rules/                       → 规则体系目录
 
 EOF
 }
@@ -285,14 +297,66 @@ do_install() {
     [[ $skipped -gt 0 ]]   && info "已跳过: ${skipped} 个文件"
     [[ $failed -gt 0 ]]    && error "失败:   ${failed} 个文件"
 
+    # 安装核心目录（skills 和 rules）的符号链接
+    echo ""
+    header "📂 安装核心目录"
+
+    for dir in "${CORE_DIRS[@]}"; do
+        local source="${SCRIPT_DIR}/${dir}"
+        local target="${target_dir}/${dir}"
+        local link_target="${rel_path}/${dir}"
+
+        if [[ ! -d "$source" ]]; then
+            error "${dir}/ — 源目录不存在，跳过"
+            ((failed++))
+            continue
+        fi
+
+        if [[ -L "$target" ]]; then
+            local existing_link
+            existing_link="$(readlink "$target")"
+            if [[ "$existing_link" == "$link_target" || "$existing_link" == "$source" ]]; then
+                info "${dir}/ — 已安装，跳过"
+                ((skipped++))
+                continue
+            else
+                warn "${dir}/ — 已存在不同的符号链接 → ${existing_link}"
+                read -rp "  是否覆盖？[y/N]: " overwrite
+                if [[ "$overwrite" != "y" && "$overwrite" != "Y" ]]; then
+                    ((skipped++))
+                    continue
+                fi
+                rm "$target"
+            fi
+        elif [[ -d "$target" ]]; then
+            warn "${dir}/ — 目标已存在普通目录"
+            read -rp "  是否备份并覆盖？[y/N]: " overwrite
+            if [[ "$overwrite" != "y" && "$overwrite" != "Y" ]]; then
+                ((skipped++))
+                continue
+            fi
+            mv "$target" "${target}.bak"
+            info "${dir}/ — 已备份为 ${dir}.bak"
+        fi
+
+        if ln -s "$link_target" "$target" 2>/dev/null; then
+            success "${dir}/ → ${link_target}"
+            ((installed++))
+        else
+            error "${dir}/ — 创建符号链接失败"
+            ((failed++))
+        fi
+    done
+
     if [[ $installed -gt 0 ]]; then
         echo ""
         info "现在你可以在 ${BOLD}${target_dir}${NC} 中使用 AI 编码工具，"
         info "它们会自动加载本仓库的规则和 Skill 体系。"
 
-        # 自动添加 .gitignore 忽略规则
+        # 自动添加 .gitignore 忽略规则（入口文件 + 核心目录）
+        local all_ignore_files=("${selected_files[@]}" "${CORE_DIRS[@]}")
         echo ""
-        add_gitignore_rules "$target_dir" "${selected_files[@]}"
+        add_gitignore_rules "$target_dir" "${all_ignore_files[@]}"
     fi
 }
 
@@ -330,12 +394,42 @@ do_uninstall() {
         fi
     done
 
+    # 卸载核心目录符号链接
+    for dir in "${CORE_DIRS[@]}"; do
+        local target="${target_dir}/${dir}"
+
+        if [[ -L "$target" ]]; then
+            local link_target
+            link_target="$(readlink "$target")"
+            if [[ "$link_target" == *"${REPO_NAME}"* ]]; then
+                rm "$target"
+                success "${dir}/ — 已移除"
+                ((removed++))
+            else
+                warn "${dir}/ — 符号链接指向其他位置 (${link_target})，跳过"
+            fi
+        elif [[ -d "$target" ]]; then
+            warn "${dir}/ — 是普通目录而非符号链接，跳过（请手动处理）"
+        else
+            info "${dir}/ — 不存在，跳过"
+            ((not_found++))
+        fi
+    done
+
     # 恢复备份
     for file in "${ALL_ENTRY_FILES[@]}"; do
         local backup="${target_dir}/${file}.bak"
         if [[ -f "$backup" ]]; then
             mv "$backup" "${target_dir}/${file}"
             info "${file} — 已从备份恢复"
+        fi
+    done
+
+    for dir in "${CORE_DIRS[@]}"; do
+        local backup="${target_dir}/${dir}.bak"
+        if [[ -d "$backup" ]]; then
+            mv "$backup" "${target_dir}/${dir}"
+            info "${dir}/ — 已从备份恢复"
         fi
     done
 
@@ -394,6 +488,37 @@ do_status() {
         fi
 
         printf "  %-25s " "$file"
+        echo -e "${status}  ${detail}"
+    done
+
+    echo ""
+    printf "  ${BOLD}%-25s %-12s %s${NC}\n" "核心目录" "状态" "详情"
+    printf "  %-25s %-12s %s\n" "─────────────────────────" "────────────" "──────────────────────"
+
+    for dir in "${CORE_DIRS[@]}"; do
+        local target="${target_dir}/${dir}"
+        local status=""
+        local detail=""
+
+        if [[ -L "$target" ]]; then
+            local link_target
+            link_target="$(readlink "$target")"
+            if [[ "$link_target" == *"${REPO_NAME}"* ]]; then
+                status="${GREEN}✅ 已安装${NC}"
+                detail="→ ${link_target}"
+            else
+                status="${YELLOW}⚠️  其他链接${NC}"
+                detail="→ ${link_target}"
+            fi
+        elif [[ -d "$target" ]]; then
+            status="${YELLOW}⚠️  普通目录${NC}"
+            detail="非符号链接"
+        else
+            status="${RED}❌ 未安装${NC}"
+            detail=""
+        fi
+
+        printf "  %-25s " "${dir}/"
         echo -e "${status}  ${detail}"
     done
     echo ""
