@@ -69,6 +69,36 @@
 
 当用户的需求**不是普通编码任务**，而是涉及特定工作流（如简历项目总结、Git 多环境配置等）时，**先读取 `skills/index.md` 查找匹配的 Skill**，再按 Skill 定义的流程执行。普通编码任务无需读取 Skill 索引。
 
+### 3.2.1 工作流编排（强制）
+
+> ⚠️ 当用户的需求触发了工作流 Skill 时，AI **必须**按工作流链路顺序执行，不得跳过任何环节。
+
+**完整开发工作流**（新功能/新项目）：
+```
+brainstorming → writing-plans → subagent-driven-development → test-driven-development → code-review → verification-before-completion
+```
+
+**Bug 修复工作流**：
+```
+systematic-debugging → test-driven-development → verification-before-completion
+```
+
+**触发规则**：
+
+| 用户意图 | 触发的工作流 | 起始 Skill |
+|---------|------------|-----------|
+| 新功能/新项目 | 完整开发工作流 | brainstorming |
+| Bug 修复 | Bug 修复工作流 | systematic-debugging |
+| 简单代码修改 | 无需工作流 | 直接执行（遵守 rules） |
+| 重构 | 完整开发工作流（简化版） | brainstorming |
+
+**铁律**：
+- 工作流中的每个 Skill 都是**门禁**，必须通过才能进入下一步
+- brainstorming 未完成设计 → 禁止写计划
+- writing-plans 未完成计划 → 禁止写代码
+- test-driven-development 未通过 → 禁止声称完成
+- verification-before-completion 未验证 → 禁止提交
+
 ### 3.3 Skill 调用通知（强制）
 
 > AI 在使用 Skill 时，必须向用户明确告知 Skill 的运行状态，确保透明可感知。

@@ -4,9 +4,9 @@
 
 ## 索引元信息
 
-- **索引版本**：1.7.0
-- **最后更新**：2026-04-11
-- **Skill 总数**：9
+- **索引版本**：2.0.0
+- **最后更新**：2026-04-16
+- **Skill 总数**：15
 - **索引维护方式**：AI 自动维护（见底部维护指令）
 
 ---
@@ -24,6 +24,46 @@
 | 代码自动审查与修复器 | [code-review-auto-fix.md](./code-review-auto-fix.md) | 自动审查 AI 生成的代码，基于 rules/ 规范 + 通用软件工程最佳实践双层体系全方位检查，发现问题自动修复直到合规 | `代码审查`, `自动修复`, `代码质量`, `规范检查`, `code review`, `SOLID`, `最佳实践` |
 | Skill 质量守护者 | [skill-quality-guardian.md](./skill-quality-guardian.md) | 自动学习最新 AI 知识，基于前沿最佳实践审查和完善所有 Skill，确保 Skill 体系始终高质量 | `Skill 质量`, `自动完善`, `AI 知识学习`, `持续改进`, `质量保障`, `最佳实践` |
 | Skill 创建器 | [skill-creator.md](./skill-creator.md) | 标准化 Skill 创建流程，快速生成结构规范、可分发的 Skill 包 | `Skill 创建`, `脚手架`, `标准化`, `打包`, `SKILL.md` |
+| 需求探索与设计 | [brainstorming/SKILL.md](./brainstorming/SKILL.md) | 在任何创造性工作之前，通过协作对话探索用户意图、需求和设计方案 | `需求分析`, `设计`, `brainstorming`, `方案探索`, `工作流` |
+| 实现计划编写 | [writing-plans/SKILL.md](./writing-plans/SKILL.md) | 将设计方案拆分为详细的、可执行的实现计划，每个任务 2-5 分钟粒度 | `实现计划`, `任务拆分`, `TDD`, `工作流` |
+| 测试驱动开发 | [test-driven-development/SKILL.md](./test-driven-development/SKILL.md) | 强制 RED-GREEN-REFACTOR 循环，先写失败测试再写最小实现 | `TDD`, `测试驱动`, `RED-GREEN-REFACTOR`, `单元测试` |
+| 系统化调试 | [systematic-debugging/SKILL.md](./systematic-debugging/SKILL.md) | 四阶段根因分析流程：先找根因再修复 | `调试`, `debugging`, `根因分析`, `Bug 修复` |
+| 完成前验证 | [verification-before-completion/SKILL.md](./verification-before-completion/SKILL.md) | 在声称工作完成之前，必须运行验证命令并确认输出 | `验证`, `完成检查`, `质量保障`, `证据驱动` |
+| 子代理驱动开发 | [subagent-driven-development/SKILL.md](./subagent-driven-development/SKILL.md) | 每个任务分派全新子代理，配合两阶段审查实现高质量快速迭代 | `子代理`, `subagent`, `并行开发`, `任务分派` |
+
+---
+
+## 🔗 工作流编排
+
+> **AI 必读**：以下工作流 Skill 之间存在明确的调用链关系。当触发工作流时，AI 必须按链路顺序执行，不得跳过任何环节。
+
+### 完整开发工作流
+
+```mermaid
+graph LR
+    A[brainstorming<br/>需求探索与设计] -->|设计批准| B[writing-plans<br/>实现计划编写]
+    B -->|计划完成| C[subagent-driven-development<br/>子代理驱动开发]
+    C -->|每个任务| D[test-driven-development<br/>测试驱动开发]
+    D -->|代码完成| E[code-review-auto-fix<br/>代码审查]
+    E -->|审查通过| F[verification-before-completion<br/>完成前验证]
+```
+
+### Bug 修复工作流
+
+```mermaid
+graph LR
+    A[systematic-debugging<br/>系统化调试] -->|找到根因| B[test-driven-development<br/>测试驱动开发]
+    B -->|修复完成| C[verification-before-completion<br/>完成前验证]
+```
+
+### 工作流触发规则
+
+| 用户意图 | 触发的工作流 | 起始 Skill |
+|---------|------------|------------|
+| 新功能/新项目 | 完整开发工作流 | brainstorming |
+| Bug 修复 | Bug 修复工作流 | systematic-debugging |
+| 简单代码修改 | 无需工作流 | 直接执行（遵守 rules） |
+| 重构 | 完整开发工作流（简化版） | brainstorming |
 
 ---
 
@@ -101,24 +141,92 @@
 - **输入**：技能的功能描述和基本信息
 - **输出**：打包后的 .zip 或 .skill 文件，包含 SKILL.md 和附属文件
 
+### 🔄 brainstorming
+
+- **文件**：[brainstorming/SKILL.md](./brainstorming/SKILL.md)
+- **类型**：🔗 工作流 Skill
+- **功能**：在任何创造性工作之前，通过协作对话探索用户意图、需求和设计方案，确保 AI 不会跳过思考直接写代码
+- **适用场景**：用户提出新功能需求、描述要构建的东西、说"帮我做/写/建/创建 XXX"
+- **输入**：用户的需求描述或想法
+- **输出**：经过验证的设计文档
+- **后续 Skill**：`writing-plans`
+
+### 🔄 writing-plans
+
+- **文件**：[writing-plans/SKILL.md](./writing-plans/SKILL.md)
+- **类型**：🔗 工作流 Skill
+- **功能**：将设计方案拆分为详细的、可执行的实现计划，每个任务细化到 2-5 分钟粒度，确保任何工程师（包括 AI 子代理）都能无歧义地执行
+- **适用场景**：brainstorming 完成设计并获得用户批准后、用户提供了明确的需求规格
+- **输入**：经过验证的设计文档或需求规格
+- **输出**：详细的实现计划文档
+- **后续 Skill**：`subagent-driven-development` 或 `test-driven-development`
+
+### 🔄 test-driven-development
+
+- **文件**：[test-driven-development/SKILL.md](./test-driven-development/SKILL.md)
+- **类型**：🔗 工作流 Skill
+- **功能**：强制执行 RED-GREEN-REFACTOR 循环：先写失败测试，再写最小实现，最后重构。违反此流程的代码必须删除重来
+- **适用场景**：实现任何新功能、修复任何 Bug、重构代码、修改行为
+- **输入**：要实现的功能需求或要修复的 Bug 描述
+- **输出**：经过 TDD 流程验证的高质量代码
+- **附属文件**：`testing-anti-patterns.md`（测试反模式参考）
+
+### 🔄 systematic-debugging
+
+- **文件**：[systematic-debugging/SKILL.md](./systematic-debugging/SKILL.md)
+- **类型**：🔗 工作流 Skill
+- **功能**：四阶段根因分析流程（根因调查 → 模式分析 → 假设测试 → 实现修复），先找根因再修复，随机修复浪费时间并制造新 Bug
+- **适用场景**：遇到任何 Bug、测试失败、意外行为、性能问题、构建失败
+- **输入**：Bug 描述、错误信息或意外行为
+- **输出**：根因分析报告 + 经过验证的修复
+
+### 🔄 verification-before-completion
+
+- **文件**：[verification-before-completion/SKILL.md](./verification-before-completion/SKILL.md)
+- **类型**：🔗 工作流 Skill
+- **功能**：在声称工作完成之前，必须运行验证命令并确认输出。证据先于断言，永远如此
+- **适用场景**：即将声称工作完成、即将提交代码、即将创建 PR、即将声称 Bug 已修复
+- **输入**：要验证的工作内容
+- **输出**：验证结果报告
+
+### 🔄 subagent-driven-development
+
+- **文件**：[subagent-driven-development/SKILL.md](./subagent-driven-development/SKILL.md)
+- **类型**：🔗 工作流 Skill
+- **功能**：通过分派全新子代理执行计划中的每个任务，配合两阶段审查（规格合规 + 代码质量），实现高质量快速迭代
+- **适用场景**：writing-plans 完成计划编写后、用户选择子代理驱动执行
+- **输入**：实现计划文档
+- **输出**：经过两阶段审查的高质量实现代码
+- **附属文件**：`implementer-prompt.md`、`spec-reviewer-prompt.md`、`code-quality-reviewer-prompt.md`
+
 ---
 
 ## AI 使用指南
 
 ### 🔍 如何匹配 Skill
 
-1. **关键词匹配**：根据用户需求中的关键词，在上方「快速导航」表格的「关键词」列中查找匹配项
-2. **场景匹配**：在「详细索引」中查看每个 Skill 的「适用场景」，选择最符合当前任务的 Skill
-3. **组合使用**：如果任务涉及多个方面，可以组合使用多个 Skill
+1. **工作流优先**：如果用户的需求匹配工作流触发规则（见上方「工作流编排」章节），**必须**按工作流链路执行
+2. **关键词匹配**：根据用户需求中的关键词，在上方「快速导航」表格的「关键词」列中查找匹配项
+3. **场景匹配**：在「详细索引」中查看每个 Skill 的「适用场景」，选择最符合当前任务的 Skill
+4. **组合使用**：如果任务涉及多个方面，可以组合使用多个 Skill
 
 ### 📖 使用流程
 
 ```
-1. 查阅本索引 → 匹配合适的 Skill
-2. 读取对应 Skill 文件 → 了解执行步骤和输出模板
-3. 按照 Skill 定义的流程执行任务
-4. 按照 Skill 定义的模板输出结果
+1. 查阅本索引 → 检查是否触发工作流
+2. 如果触发工作流 → 按工作流链路依次执行各 Skill
+3. 如果未触发工作流 → 匹配合适的独立 Skill
+4. 读取对应 Skill 文件 → 了解执行步骤和输出模板
+5. 按照 Skill 定义的流程执行任务
+6. 按照 Skill 定义的模板输出结果
 ```
+
+### 📁 Skill 文件结构说明
+
+Skill 支持两种文件结构：
+
+1. **单文件 Skill**：`skills/xxx.md` — 适用于简单 Skill
+2. **目录 Skill**：`skills/xxx/SKILL.md` + 附属文件 — 适用于复杂 Skill，可包含子 prompt、脚本、示例等
 
 ---
 
