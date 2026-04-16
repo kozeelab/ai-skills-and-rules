@@ -32,7 +32,7 @@ header()  { echo -e "\n${BOLD}${CYAN}$*${NC}\n"; }
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_NAME="ai-skills-and-rules"
 
-# 需要链接的平台入口文件
+# 需要链接的平台入口文件（单文件）
 ENTRY_FILES=(
     "CLAUDE.md"              # Claude Code 自动加载入口
     "GEMINI.md"              # Gemini CLI 自动加载入口
@@ -41,6 +41,15 @@ ENTRY_FILES=(
     ".cursorrules"           # Cursor 自动加载规则
 )
 
+# 需要链接的平台入口文件（目录型，需要创建父目录后链接文件）
+DIR_ENTRY_FILES=(
+    ".codebuddy/rules/main.md"   # CodeBuddy 自动加载规则
+    ".trae/rules/main.md"        # Trae 自动加载规则
+)
+
+# 合并所有入口文件（用于状态查看和卸载）
+ALL_ENTRY_FILES=("${ENTRY_FILES[@]}" "${DIR_ENTRY_FILES[@]}")
+
 # 文件说明映射
 declare -A FILE_DESC=(
     ["CLAUDE.md"]="Claude Code 自动加载入口"
@@ -48,6 +57,8 @@ declare -A FILE_DESC=(
     ["gemini-extension.json"]="Gemini CLI 插件注册"
     ["AGENTS.md"]="Cursor Agent / 通用 Agent 入口"
     [".cursorrules"]="Cursor 自动加载规则"
+    [".codebuddy/rules/main.md"]="CodeBuddy 自动加载规则"
+    [".trae/rules/main.md"]="Trae 自动加载规则"
 )
 
 # ── 帮助信息 ──────────────────────────────────────────────────────────────────
@@ -74,11 +85,13 @@ show_help() {
     ./install.sh --uninstall ~/projects/my-app
 
   安装的文件:
-    CLAUDE.md              → Claude Code 自动加载入口
-    GEMINI.md              → Gemini CLI 自动加载入口
-    gemini-extension.json  → Gemini CLI 插件注册
-    AGENTS.md              → Cursor Agent / 通用 Agent 入口
-    .cursorrules           → Cursor 自动加载规则
+    CLAUDE.md                    → Claude Code 自动加载入口
+    GEMINI.md                    → Gemini CLI 自动加载入口
+    gemini-extension.json        → Gemini CLI 插件注册
+    AGENTS.md                    → Cursor Agent / 通用 Agent 入口
+    .cursorrules                 → Cursor 自动加载规则
+    .codebuddy/rules/main.md     → CodeBuddy 自动加载规则
+    .trae/rules/main.md          → Trae 自动加载规则
 
 EOF
 }
@@ -128,13 +141,13 @@ do_install() {
     local selected_files=()
 
     if [[ "$install_all" == "true" ]]; then
-        selected_files=("${ENTRY_FILES[@]}")
+        selected_files=("${ALL_ENTRY_FILES[@]}")
         info "安装所有入口文件"
     else
         echo -e "${BOLD}请选择要安装的入口文件（输入编号，多个用空格分隔，输入 a 全选）：${NC}"
         echo ""
-        for i in "${!ENTRY_FILES[@]}"; do
-            local file="${ENTRY_FILES[$i]}"
+        for i in "${!ALL_ENTRY_FILES[@]}"; do
+            local file="${ALL_ENTRY_FILES[$i]}"
             local desc="${FILE_DESC[$file]}"
             local status=""
             if [[ -e "${target_dir}/${file}" ]]; then
@@ -147,11 +160,11 @@ do_install() {
         read -rp "请输入选择 [a/1 2 3...]: " choices
 
         if [[ "$choices" == "a" || "$choices" == "A" ]]; then
-            selected_files=("${ENTRY_FILES[@]}")
+            selected_files=("${ALL_ENTRY_FILES[@]}")
         else
             for choice in $choices; do
-                if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#ENTRY_FILES[@]} )); then
-                    selected_files+=("${ENTRY_FILES[$((choice-1))]}")
+                if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#ALL_ENTRY_FILES[@]} )); then
+                    selected_files+=("${ALL_ENTRY_FILES[$((choice-1))]}")
                 else
                     warn "忽略无效选择: $choice"
                 fi
@@ -181,6 +194,14 @@ do_install() {
             error "${file} — 源文件不存在，跳过"
             ((failed++))
             continue
+        fi
+
+        # 如果是目录型入口文件，确保父目录存在
+        local parent_dir
+        parent_dir="$(dirname "$target")"
+        if [[ ! -d "$parent_dir" ]]; then
+            mkdir -p "$parent_dir"
+            info "创建目录: $(dirname "$file")"
         fi
 
         # 检查目标是否已存在
@@ -254,7 +275,7 @@ do_uninstall() {
     local removed=0
     local not_found=0
 
-    for file in "${ENTRY_FILES[@]}"; do
+    for file in "${ALL_ENTRY_FILES[@]}"; do
         local target="${target_dir}/${file}"
 
         if [[ -L "$target" ]]; then
@@ -277,7 +298,7 @@ do_uninstall() {
     done
 
     # 恢复备份
-    for file in "${ENTRY_FILES[@]}"; do
+    for file in "${ALL_ENTRY_FILES[@]}"; do
         local backup="${target_dir}/${file}.bak"
         if [[ -f "$backup" ]]; then
             mv "$backup" "${target_dir}/${file}"
@@ -303,7 +324,7 @@ do_status() {
     printf "  ${BOLD}%-25s %-12s %s${NC}\n" "文件" "状态" "详情"
     printf "  %-25s %-12s %s\n" "─────────────────────────" "────────────" "──────────────────────"
 
-    for file in "${ENTRY_FILES[@]}"; do
+    for file in "${ALL_ENTRY_FILES[@]}"; do
         local target="${target_dir}/${file}"
         local status=""
         local detail=""

@@ -33,11 +33,13 @@ $RepoName = "ai-skills-and-rules"
 
 # 需要链接的平台入口文件及说明
 $EntryFiles = [ordered]@{
-    "CLAUDE.md"             = "Claude Code 自动加载入口"
-    "GEMINI.md"             = "Gemini CLI 自动加载入口"
-    "gemini-extension.json" = "Gemini CLI 插件注册"
-    "AGENTS.md"             = "Cursor Agent / 通用 Agent 入口"
-    ".cursorrules"          = "Cursor 自动加载规则"
+    "CLAUDE.md"                  = "Claude Code 自动加载入口"
+    "GEMINI.md"                  = "Gemini CLI 自动加载入口"
+    "gemini-extension.json"      = "Gemini CLI 插件注册"
+    "AGENTS.md"                  = "Cursor Agent / 通用 Agent 入口"
+    ".cursorrules"               = "Cursor 自动加载规则"
+    ".codebuddy/rules/main.md"   = "CodeBuddy 自动加载规则"
+    ".trae/rules/main.md"        = "Trae 自动加载规则"
 }
 
 # ── 帮助信息 ──────────────────────────────────────────────────────────────────
@@ -69,11 +71,13 @@ function Show-Help {
     2. 已开启 Windows 开发者模式（设置 → 更新和安全 → 开发者选项）
 
   安装的文件:
-    CLAUDE.md              → Claude Code 自动加载入口
-    GEMINI.md              → Gemini CLI 自动加载入口
-    gemini-extension.json  → Gemini CLI 插件注册
-    AGENTS.md              → Cursor Agent / 通用 Agent 入口
-    .cursorrules           → Cursor 自动加载规则
+    CLAUDE.md                    → Claude Code 自动加载入口
+    GEMINI.md                    → Gemini CLI 自动加载入口
+    gemini-extension.json        → Gemini CLI 插件注册
+    AGENTS.md                    → Cursor Agent / 通用 Agent 入口
+    .cursorrules                 → Cursor 自动加载规则
+    .codebuddy/rules/main.md     → CodeBuddy 自动加载规则
+    .trae/rules/main.md          → Trae 自动加载规则
 
 "@
 }
@@ -219,6 +223,13 @@ function Install-Plugin {
             Write-Err "$file — 源文件不存在，跳过"
             $failed++
             continue
+        }
+
+        # 如果是目录型入口文件，确保父目录存在
+        $parentDir = Split-Path $targetFile -Parent
+        if (-not (Test-Path $parentDir)) {
+            New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
+            Write-Info "创建目录: $(Split-Path $file -Parent)"
         }
 
         # 检查目标是否已存在
