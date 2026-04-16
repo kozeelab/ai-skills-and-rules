@@ -239,7 +239,7 @@ do_install() {
         # 检查源文件是否存在
         if [[ ! -f "$source" ]]; then
             error "${file} — 源文件不存在，跳过"
-            ((failed++))
+            ((failed++)) || true || true
             continue
         fi
 
@@ -258,13 +258,13 @@ do_install() {
             existing_link="$(readlink "$target")"
             if [[ "$existing_link" == "$link_target" || "$existing_link" == "$source" ]]; then
                 info "${file} — 已安装，跳过"
-                ((skipped++))
+                ((skipped++)) || true || true
                 continue
             else
                 warn "${file} — 已存在不同的符号链接 → ${existing_link}"
                 read -rp "  是否覆盖？[y/N]: " overwrite
                 if [[ "$overwrite" != "y" && "$overwrite" != "Y" ]]; then
-                    ((skipped++))
+                    ((skipped++)) || true || true
                     continue
                 fi
                 rm "$target"
@@ -273,7 +273,7 @@ do_install() {
             warn "${file} — 目标已存在普通文件"
             read -rp "  是否备份并覆盖？[y/N]: " overwrite
             if [[ "$overwrite" != "y" && "$overwrite" != "Y" ]]; then
-                ((skipped++))
+                ((skipped++)) || true
                 continue
             fi
             mv "$target" "${target}.bak"
@@ -283,10 +283,10 @@ do_install() {
         # 创建符号链接
         if ln -s "$link_target" "$target" 2>/dev/null; then
             success "${file} → ${link_target}"
-            ((installed++))
+            ((installed++)) || true
         else
             error "${file} — 创建符号链接失败"
-            ((failed++))
+            ((failed++)) || true
         fi
     done
 
@@ -308,7 +308,7 @@ do_install() {
 
         if [[ ! -d "$source" ]]; then
             error "${dir}/ — 源目录不存在，跳过"
-            ((failed++))
+            ((failed++)) || true
             continue
         fi
 
@@ -317,13 +317,13 @@ do_install() {
             existing_link="$(readlink "$target")"
             if [[ "$existing_link" == "$link_target" || "$existing_link" == "$source" ]]; then
                 info "${dir}/ — 已安装，跳过"
-                ((skipped++))
+                ((skipped++)) || true
                 continue
             else
                 warn "${dir}/ — 已存在不同的符号链接 → ${existing_link}"
                 read -rp "  是否覆盖？[y/N]: " overwrite
                 if [[ "$overwrite" != "y" && "$overwrite" != "Y" ]]; then
-                    ((skipped++))
+                    ((skipped++)) || true
                     continue
                 fi
                 rm "$target"
@@ -332,7 +332,7 @@ do_install() {
             warn "${dir}/ — 目标已存在普通目录"
             read -rp "  是否备份并覆盖？[y/N]: " overwrite
             if [[ "$overwrite" != "y" && "$overwrite" != "Y" ]]; then
-                ((skipped++))
+                ((skipped++)) || true
                 continue
             fi
             mv "$target" "${target}.bak"
@@ -341,10 +341,10 @@ do_install() {
 
         if ln -s "$link_target" "$target" 2>/dev/null; then
             success "${dir}/ → ${link_target}"
-            ((installed++))
+            ((installed++)) || true
         else
             error "${dir}/ — 创建符号链接失败"
-            ((failed++))
+            ((failed++)) || true
         fi
     done
 
@@ -382,7 +382,7 @@ do_uninstall() {
             if [[ "$link_target" == *"${REPO_NAME}"* ]]; then
                 rm "$target"
                 success "${file} — 已移除"
-                ((removed++))
+                ((removed++)) || true
             else
                 warn "${file} — 符号链接指向其他位置 (${link_target})，跳过"
             fi
@@ -390,7 +390,7 @@ do_uninstall() {
             warn "${file} — 是普通文件而非符号链接，跳过（请手动处理）"
         else
             info "${file} — 不存在，跳过"
-            ((not_found++))
+            ((not_found++)) || true
         fi
     done
 
@@ -404,7 +404,7 @@ do_uninstall() {
             if [[ "$link_target" == *"${REPO_NAME}"* ]]; then
                 rm "$target"
                 success "${dir}/ — 已移除"
-                ((removed++))
+                ((removed++)) || true
             else
                 warn "${dir}/ — 符号链接指向其他位置 (${link_target})，跳过"
             fi
@@ -412,7 +412,7 @@ do_uninstall() {
             warn "${dir}/ — 是普通目录而非符号链接，跳过（请手动处理）"
         else
             info "${dir}/ — 不存在，跳过"
-            ((not_found++))
+            ((not_found++)) || true
         fi
     done
 
