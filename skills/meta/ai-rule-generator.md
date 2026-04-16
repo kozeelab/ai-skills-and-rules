@@ -452,7 +452,7 @@ AI：（直接写了搜索函数的实现代码，没有先写测试）
 - 测试必须先运行并确认失败，再编写实现代码
 - 违反此规则的代码必须删除重来
 
-参考 Skill：`skills/test-driven-development/SKILL.md`
+参考 Skill：`skills/workflow/test-driven-development/SKILL.md`
 ```
 
 ---

@@ -71,21 +71,23 @@ output:
 
 ### Skill 文件结构
 
-Skill 支持两种文件结构，根据复杂度选择：
+Skill 按三层分类存放在 `skills/` 目录下：
 
 #### 结构一：单文件 Skill（简单 Skill）
 
 ```
-skills/
+skills/<层>/
 └── my-skill.md           ← 单个 Markdown 文件，包含 YAML Front Matter + 正文
 ```
+
+> 其中 `<层>` 为 `meta`（元能力）、`workflow`（工作流）或 `tools`（工具）
 
 适用于：功能简单、无附属资源的 Skill（如 git-multi-env、project-summary）
 
 #### 结构二：目录 Skill（复杂 Skill）
 
 ```
-skills/
+skills/<层>/
 └── my-skill/
     ├── SKILL.md              ← 【必需】技能元数据文件（YAML Front Matter + 正文）
     ├── sub-prompt-1.md       ← 【可选】子 Prompt 文件（如审查模板、角色 Prompt）

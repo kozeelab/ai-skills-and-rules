@@ -20,7 +20,7 @@
 
 ## 一键冷启动
 
-用户发送 `#start` 时，读取并执行 `skills/skill-auto-activator.md` 完成完整启动序列。
+用户发送 `#start` 时，读取并执行 `skills/meta/skill-auto-activator.md` 完成完整启动序列。
 
 ## 代码质量自检（每段代码生成后必须逐项检查）
 
