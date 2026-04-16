@@ -120,6 +120,53 @@ get_relative_path() {
     fi
 }
 
+# ── 自动添加本地 Git 忽略 ─────────────────────────────────────────────────────
+# 使用 .git/info/exclude 实现仅本地生效的忽略规则（不会推送到远程）
+add_local_git_exclude() {
+    local target_dir="$1"
+    shift
+    local files=("$@")
+
+    local git_dir="${target_dir}/.git"
+    local exclude_file="${git_dir}/info/exclude"
+
+    # 检查目标项目是否是 Git 仓库
+    if [[ ! -d "$git_dir" ]]; then
+        warn "目标项目不是 Git 仓库，跳过自动添加本地忽略规则"
+        info "💡 如果需要忽略这些符号链接，请手动处理"
+        return
+    fi
+
+    # 确保 .git/info 目录存在
+    mkdir -p "${git_dir}/info"
+
+    # 标记注释（用于识别本脚本添加的内容）
+    local marker="# >>> ai-skills-and-rules (auto-generated, do not edit) >>>"
+    local marker_end="# <<< ai-skills-and-rules <<<"
+
+    # 如果已经存在标记块，先移除旧的
+    if [[ -f "$exclude_file" ]] && grep -qF "$marker" "$exclude_file"; then
+        # 使用 sed 删除标记块（兼容 macOS 和 Linux）
+        if [[ "$(uname)" == "Darwin" ]]; then
+            sed -i '' "/$marker/,/$marker_end/d" "$exclude_file"
+        else
+            sed -i "/$marker/,/$marker_end/d" "$exclude_file"
+        fi
+    fi
+
+    # 追加新的忽略规则
+    {
+        echo ""
+        echo "$marker"
+        for file in "${files[@]}"; do
+            echo "$file"
+        done
+        echo "$marker_end"
+    } >> "$exclude_file"
+
+    success "已自动添加本地 Git 忽略规则到 .git/info/exclude（仅本地生效，不会推送到远程）"
+}
+
 # ── 安装 ──────────────────────────────────────────────────────────────────────
 do_install() {
     local target_dir="$1"
@@ -254,12 +301,10 @@ do_install() {
         echo ""
         info "现在你可以在 ${BOLD}${target_dir}${NC} 中使用 AI 编码工具，"
         info "它们会自动加载本仓库的规则和 Skill 体系。"
+
+        # 自动添加本地 Git 忽略规则
         echo ""
-        info "💡 提示: 建议将这些符号链接添加到项目的 ${BOLD}.gitignore${NC} 中："
-        echo ""
-        for file in "${selected_files[@]}"; do
-            echo "  ${file}"
-        done
+        add_local_git_exclude "$target_dir" "${selected_files[@]}"
     fi
 }
 
@@ -305,6 +350,19 @@ do_uninstall() {
             info "${file} — 已从备份恢复"
         fi
     done
+
+    # 清理 .git/info/exclude 中的本地忽略规则
+    local exclude_file="${target_dir}/.git/info/exclude"
+    local marker="# >>> ai-skills-and-rules (auto-generated, do not edit) >>>"
+    local marker_end="# <<< ai-skills-and-rules <<<"
+    if [[ -f "$exclude_file" ]] && grep -qF "$marker" "$exclude_file"; then
+        if [[ "$(uname)" == "Darwin" ]]; then
+            sed -i '' "/$marker/,/$marker_end/d" "$exclude_file"
+        else
+            sed -i "/$marker/,/$marker_end/d" "$exclude_file"
+        fi
+        success "已清理 .git/info/exclude 中的本地忽略规则"
+    fi
 
     echo ""
     header "📊 卸载完成"
