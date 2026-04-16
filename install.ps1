@@ -122,53 +122,39 @@ function Get-RelativePath {
     }
 }
 
-# ── 自动添加本地 Git 忽略 ─────────────────────────────────────────────────────
-# 使用 .git/info/exclude 实现仅本地生效的忽略规则（不会推送到远程）
-function Add-LocalGitExclude {
+# ── 自动添加 .gitignore 忽略规则 ──────────────────────────────────────────────
+# 在目标项目的 .gitignore 中添加忽略规则，防止符号链接被提交到远程
+function Add-GitignoreRules {
     param(
         [string]$Target,
         [string[]]$Files
     )
 
-    $gitDir = Join-Path $Target ".git"
-    $excludeFile = Join-Path $gitDir "info\exclude"
-
-    # 检查目标项目是否是 Git 仓库
-    if (-not (Test-Path $gitDir -PathType Container)) {
-        Write-Warn "目标项目不是 Git 仓库，跳过自动添加本地忽略规则"
-        Write-Info "💡 如果需要忽略这些符号链接，请手动处理"
-        return
-    }
-
-    # 确保 .git/info 目录存在
-    $infoDir = Join-Path $gitDir "info"
-    if (-not (Test-Path $infoDir)) {
-        New-Item -ItemType Directory -Path $infoDir -Force | Out-Null
-    }
+    $gitignoreFile = Join-Path $Target ".gitignore"
 
     # 标记注释（用于识别本脚本添加的内容）
     $marker = "# >>> ai-skills-and-rules (auto-generated, do not edit) >>>"
     $markerEnd = "# <<< ai-skills-and-rules <<<"
 
-    # 如果已经存在标记块，先移除旧的
-    if (Test-Path $excludeFile) {
-        $content = Get-Content $excludeFile -Raw -ErrorAction SilentlyContinue
+    # 如果 .gitignore 已存在且包含标记块，先移除旧的
+    if (Test-Path $gitignoreFile) {
+        $content = Get-Content $gitignoreFile -Raw -ErrorAction SilentlyContinue
         if ($content -and $content.Contains($marker)) {
             $pattern = "(?s)\r?\n?$([regex]::Escape($marker)).*?$([regex]::Escape($markerEnd))\r?\n?"
             $content = [regex]::Replace($content, $pattern, "`n")
-            Set-Content -Path $excludeFile -Value $content -NoNewline
+            Set-Content -Path $gitignoreFile -Value $content -NoNewline
         }
     }
 
-    # 追加新的忽略规则
+    # 追加忽略规则（.gitignore 不存在时会自动创建）
     $lines = @("", $marker)
     foreach ($file in $Files) {
         $lines += $file
     }
     $lines += $markerEnd
-    Add-Content -Path $excludeFile -Value ($lines -join "`n")
+    Add-Content -Path $gitignoreFile -Value ($lines -join "`n")
 
-    Write-Success "已自动添加本地 Git 忽略规则到 .git/info/exclude（仅本地生效，不会推送到远程）"
+    Write-Success "已自动添加忽略规则到 .gitignore（符号链接不会被提交到远程）"
 }
 
 # ── 安装 ──────────────────────────────────────────────────────────────────────
@@ -340,9 +326,9 @@ function Install-Plugin {
         Write-Info "现在你可以在 $Target 中使用 AI 编码工具，"
         Write-Info "它们会自动加载本仓库的规则和 Skill 体系。"
 
-        # 自动添加本地 Git 忽略规则
+        # 自动添加 .gitignore 忽略规则
         Write-Host ""
-        Add-LocalGitExclude -Target $Target -Files $selectedFiles
+        Add-GitignoreRules -Target $Target -Files $selectedFiles
     }
 }
 
@@ -393,17 +379,17 @@ function Uninstall-Plugin {
         }
     }
 
-    # 清理 .git/info/exclude 中的本地忽略规则
-    $excludeFile = Join-Path $Target ".git\info\exclude"
+    # 清理 .gitignore 中的忽略规则
+    $gitignoreFile = Join-Path $Target ".gitignore"
     $marker = "# >>> ai-skills-and-rules (auto-generated, do not edit) >>>"
     $markerEnd = "# <<< ai-skills-and-rules <<<"
-    if (Test-Path $excludeFile) {
-        $content = Get-Content $excludeFile -Raw -ErrorAction SilentlyContinue
+    if (Test-Path $gitignoreFile) {
+        $content = Get-Content $gitignoreFile -Raw -ErrorAction SilentlyContinue
         if ($content -and $content.Contains($marker)) {
             $pattern = "(?s)\r?\n?$([regex]::Escape($marker)).*?$([regex]::Escape($markerEnd))\r?\n?"
             $content = [regex]::Replace($content, $pattern, "`n")
-            Set-Content -Path $excludeFile -Value $content -NoNewline
-            Write-Success "已清理 .git/info/exclude 中的本地忽略规则"
+            Set-Content -Path $gitignoreFile -Value $content -NoNewline
+            Write-Success "已清理 .gitignore 中的忽略规则"
         }
     }
 
