@@ -1,6 +1,0 @@
-{
-  "name": "ai-skills-and-rules",
-  "description": "可插拔的 AI 增强插件：完整的工作流纪律、代码质量保障、规则自进化和 Skill 体系",
-  "version": "2.0.0",
-  "contextFileName": "GEMINI.md"
-}
